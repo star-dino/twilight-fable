@@ -16,9 +16,13 @@ and is not part of this repository) included:
     from lemo-opuscar style demos, and a loudness/sidechain master chain mirroring
     earshot's `master.py` API.
 
-The upstream projects themselves are NOT redistributed here: they are runtime
-dependencies resolved through `audio_deps.py` and the `LEMO_OPUSCAR_ROOT` /
-`EARSHOT_ROOT` environment variables.
+The upstream projects themselves are NOT redistributed in this repository, and
+no file in it imports them or reads `LEMO_OPUSCAR_ROOT` / `EARSHOT_ROOT`; the
+notices are kept because code and recipes adapted from them existed in the
+parent repository this one was split from.
+
+Recorded audio (ambience, foley, VCSL / VSCO-2-CE instrument samples) is CC0 1.0,
+is not part of this repository, and is downloaded on demand; see SOUND_CREDITS.md.
 
 --------------------------------------------------------------------------------
 1. lemo-opuscar — https://github.com/lemomo-ai/lemo-opuscar
