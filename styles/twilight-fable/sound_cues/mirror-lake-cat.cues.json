@@ -1,0 +1,271 @@
+{
+ "dur": 18,
+ "soundPreset": "twilight",
+ "scenes": [
+  {
+   "index": 0,
+   "id": "lake-prowl",
+   "title": "01 \u00b7 \u521d\u9047 \u00b7 Obsidian Shore & Dewdrop Ripple",
+   "start": 0,
+   "dur": 4.4,
+   "end": 4.4,
+   "settle": 3.168,
+   "keyframe": 3.168,
+   "mood": "lake-night",
+   "bed": "lake,frogs:-8",
+   "reveal": null,
+   "look": "obsidianLake",
+   "silence": null
+  },
+  {
+   "index": 1,
+   "id": "mirror-gaze",
+   "title": "02 \u00b7 \u6620\u5fc3 \u00b7 Surface-Mirror Light Hand-Off",
+   "start": 4.4,
+   "dur": 4.6,
+   "end": 9,
+   "settle": 7.712,
+   "keyframe": 7.712,
+   "mood": "mirror",
+   "bed": "lake:-1,reeds:-8",
+   "reveal": null,
+   "look": "abyssalGlow",
+   "silence": null
+  },
+  {
+   "index": 2,
+   "id": "lotus-chase",
+   "title": "03 \u00b7 \u9010\u5149 \u00b7 Stepping-Stone Pursuit & Lotus Bloom",
+   "start": 9,
+   "dur": 4.6,
+   "end": 13.6,
+   "settle": 12.312,
+   "keyframe": 12.312,
+   "mood": "play",
+   "bed": "frogs:-5,reeds:-10,lake:-8",
+   "reveal": null,
+   "look": "biolumBloom",
+   "silence": null
+  },
+  {
+   "index": 3,
+   "id": "starlight-symphony",
+   "title": "04 \u00b7 \u661f\u6cb3 \u00b7 Mirror-Lake Aurora Symphony",
+   "start": 13.6,
+   "dur": 4.4,
+   "end": 18,
+   "settle": 16.768,
+   "keyframe": 16.768,
+   "mood": "stars",
+   "bed": "wind,lake:-5",
+   "reveal": "0.4:10",
+   "look": "celestialLake",
+   "silence": null
+  }
+ ],
+ "cues": [
+  {
+   "t": 0,
+   "kind": "scene_cut",
+   "scene": "lake-prowl",
+   "label": "01 \u00b7 \u521d\u9047 \u00b7 Obsidian Shore & Dewdrop Ripple",
+   "intensity": 0.78
+  },
+  {
+   "t": 0.35,
+   "kind": "paw_step",
+   "scene": "lake-prowl",
+   "label": "moss_step",
+   "intensity": 0.65
+  },
+  {
+   "t": 0.85,
+   "kind": "paw_step",
+   "scene": "lake-prowl",
+   "label": "moss_step",
+   "intensity": 0.65
+  },
+  {
+   "t": 1.35,
+   "kind": "paw_step",
+   "scene": "lake-prowl",
+   "label": "moss_step",
+   "intensity": 0.7
+  },
+  {
+   "t": 1.85,
+   "kind": "water_ripple",
+   "scene": "lake-prowl",
+   "label": "dewdrop_ripple",
+   "intensity": 0.85
+  },
+  {
+   "t": 2.1,
+   "kind": "paw_step",
+   "scene": "lake-prowl",
+   "label": "paw_step",
+   "intensity": 0.42
+  },
+  {
+   "t": 2.35,
+   "kind": "ear_perk",
+   "scene": "lake-prowl",
+   "label": "cat_curious",
+   "intensity": 0.78
+  },
+  {
+   "t": 3.25,
+   "kind": "spirit_shimmer",
+   "scene": "lake-prowl",
+   "label": "koi_glimmer",
+   "intensity": 0.82
+  },
+  {
+   "t": 4.4,
+   "kind": "scene_cut",
+   "scene": "mirror-gaze",
+   "label": "02 \u00b7 \u6620\u5fc3 \u00b7 Surface-Mirror Light Hand-Off",
+   "intensity": 1
+  },
+  {
+   "t": 4.9,
+   "kind": "water_ripple",
+   "scene": "mirror-gaze",
+   "label": "koi_circle",
+   "intensity": 0.75
+  },
+  {
+   "t": 5.85,
+   "kind": "ear_perk",
+   "scene": "mirror-gaze",
+   "label": "cat_head_tilt",
+   "intensity": 0.72
+  },
+  {
+   "t": 6.6,
+   "kind": "paw_step",
+   "scene": "mirror-gaze",
+   "label": "paw_hover_mirror",
+   "intensity": 0.7
+  },
+  {
+   "t": 7.05,
+   "kind": "water_ripple",
+   "scene": "mirror-gaze",
+   "label": "mirror_touch",
+   "intensity": 0.88
+  },
+  {
+   "t": 7.6,
+   "kind": "spirit_shimmer",
+   "scene": "mirror-gaze",
+   "label": "amber_rim_handoff",
+   "intensity": 0.92
+  },
+  {
+   "t": 8.567,
+   "kind": "paw_step",
+   "scene": "mirror-gaze",
+   "label": "paw_step",
+   "intensity": 0.42
+  },
+  {
+   "t": 9,
+   "kind": "scene_cut",
+   "scene": "lotus-chase",
+   "label": "03 \u00b7 \u9010\u5149 \u00b7 Stepping-Stone Pursuit & Lotus Bloom",
+   "intensity": 1
+  },
+  {
+   "t": 9.35,
+   "kind": "paw_step",
+   "scene": "lotus-chase",
+   "label": "stone_trot",
+   "intensity": 0.72
+  },
+  {
+   "t": 9.85,
+   "kind": "paw_step",
+   "scene": "lotus-chase",
+   "label": "stone_trot",
+   "intensity": 0.74
+  },
+  {
+   "t": 10.367,
+   "kind": "paw_step",
+   "scene": "lotus-chase",
+   "label": "paw_step",
+   "intensity": 0.42
+  },
+  {
+   "t": 10.45,
+   "kind": "spirit_shimmer",
+   "scene": "lotus-chase",
+   "label": "lotus_wake_1",
+   "intensity": 0.8
+  },
+  {
+   "t": 11.05,
+   "kind": "critter_hop",
+   "scene": "lotus-chase",
+   "label": "cat_stone_leap",
+   "intensity": 0.88
+  },
+  {
+   "t": 11.95,
+   "kind": "water_ripple",
+   "scene": "lotus-chase",
+   "label": "stone_land_ripple",
+   "intensity": 0.84
+  },
+  {
+   "t": 11.967,
+   "kind": "paw_step",
+   "scene": "lotus-chase",
+   "label": "paw_step",
+   "intensity": 0.42
+  },
+  {
+   "t": 12.55,
+   "kind": "spirit_shimmer",
+   "scene": "lotus-chase",
+   "label": "spore_cascade",
+   "intensity": 0.9
+  },
+  {
+   "t": 13.6,
+   "kind": "scene_cut",
+   "scene": "starlight-symphony",
+   "label": "04 \u00b7 \u661f\u6cb3 \u00b7 Mirror-Lake Aurora Symphony",
+   "intensity": 1
+  },
+  {
+   "t": 14.05,
+   "kind": "water_ripple",
+   "scene": "starlight-symphony",
+   "label": "school_glide",
+   "intensity": 0.76
+  },
+  {
+   "t": 14.95,
+   "kind": "spirit_shimmer",
+   "scene": "starlight-symphony",
+   "label": "aurora_reflection",
+   "intensity": 0.85
+  },
+  {
+   "t": 16.1,
+   "kind": "layer_float",
+   "scene": "starlight-symphony",
+   "label": "constellation_swim",
+   "intensity": 0.88
+  },
+  {
+   "t": 17.2,
+   "kind": "spirit_shimmer",
+   "scene": "starlight-symphony",
+   "label": "starlight_resolve",
+   "intensity": 0.82
+  }
+ ]
+}

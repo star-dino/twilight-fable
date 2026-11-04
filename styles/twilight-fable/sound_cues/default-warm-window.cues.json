@@ -1,0 +1,201 @@
+{
+ "dur": 14,
+ "soundPreset": "twilight",
+ "scenes": [
+  {
+   "index": 0,
+   "id": "fog-wood",
+   "title": "01 \u00b7 \u96fe\u6797 \u00b7 Fog Wood",
+   "start": 0,
+   "dur": 3.2,
+   "end": 3.2,
+   "settle": 2.304,
+   "keyframe": 2.304,
+   "mood": null,
+   "bed": null,
+   "reveal": null,
+   "look": "fogwood",
+   "silence": null
+  },
+  {
+   "index": 1,
+   "id": "mound-door",
+   "title": "02 \u00b7 \u5706\u95e8 \u00b7 The Round Door",
+   "start": 3.2,
+   "dur": 4.2,
+   "end": 7.4,
+   "settle": 6.224,
+   "keyframe": 6.224,
+   "mood": null,
+   "bed": null,
+   "reveal": null,
+   "look": "glade",
+   "silence": null
+  },
+  {
+   "index": 2,
+   "id": "hearth-warm",
+   "title": "03 \u00b7 \u7089\u5149 \u00b7 Hearth Warmth",
+   "start": 7.4,
+   "dur": 3.6,
+   "end": 11,
+   "settle": 9.992,
+   "keyframe": 9.992,
+   "mood": null,
+   "bed": null,
+   "reveal": null,
+   "look": "hearth",
+   "silence": null
+  },
+  {
+   "index": 3,
+   "id": "dawn-window",
+   "title": "04 \u00b7 \u6668\u7a97 \u00b7 Dawn Window",
+   "start": 11,
+   "dur": 3,
+   "end": 14,
+   "settle": 13.16,
+   "keyframe": 13.16,
+   "mood": null,
+   "bed": null,
+   "reveal": null,
+   "look": "mintmist",
+   "silence": null
+  }
+ ],
+ "cues": [
+  {
+   "t": 0,
+   "kind": "scene_cut",
+   "scene": "fog-wood",
+   "label": "01 \u00b7 \u96fe\u6797 \u00b7 Fog Wood",
+   "intensity": 0.78
+  },
+  {
+   "t": 0.9,
+   "kind": "layer_float",
+   "scene": "fog-wood",
+   "label": "far-window",
+   "intensity": 0.78
+  },
+  {
+   "t": 1.7,
+   "kind": "count_tick",
+   "scene": "fog-wood",
+   "label": "ears-perk",
+   "intensity": 0.78
+  },
+  {
+   "t": 2.2,
+   "kind": "count_tick",
+   "scene": "fog-wood",
+   "label": "paw",
+   "intensity": 0.78
+  },
+  {
+   "t": 2.7,
+   "kind": "count_tick",
+   "scene": "fog-wood",
+   "label": "paw",
+   "intensity": 0.78
+  },
+  {
+   "t": 3.2,
+   "kind": "scene_cut",
+   "scene": "mound-door",
+   "label": "02 \u00b7 \u5706\u95e8 \u00b7 The Round Door",
+   "intensity": 1
+  },
+  {
+   "t": 3.6,
+   "kind": "count_tick",
+   "scene": "mound-door",
+   "label": "paw",
+   "intensity": 0.78
+  },
+  {
+   "t": 4.1,
+   "kind": "count_tick",
+   "scene": "mound-door",
+   "label": "paw",
+   "intensity": 0.78
+  },
+  {
+   "t": 4.6,
+   "kind": "count_tick",
+   "scene": "mound-door",
+   "label": "stop",
+   "intensity": 0.78
+  },
+  {
+   "t": 5,
+   "kind": "card_enter",
+   "scene": "mound-door",
+   "label": "door-creak",
+   "intensity": 0.78
+  },
+  {
+   "t": 5.8,
+   "kind": "layer_float",
+   "scene": "mound-door",
+   "label": "warm-spill",
+   "intensity": 0.78
+  },
+  {
+   "t": 6.5,
+   "kind": "count_tick",
+   "scene": "mound-door",
+   "label": "step-in",
+   "intensity": 0.78
+  },
+  {
+   "t": 7.4,
+   "kind": "scene_cut",
+   "scene": "hearth-warm",
+   "label": "03 \u00b7 \u7089\u5149 \u00b7 Hearth Warmth",
+   "intensity": 1
+  },
+  {
+   "t": 7.9,
+   "kind": "stroke_draw",
+   "scene": "hearth-warm",
+   "label": "lamp-rise",
+   "intensity": 0.78
+  },
+  {
+   "t": 9,
+   "kind": "layer_float",
+   "scene": "hearth-warm",
+   "label": "rim-handoff",
+   "intensity": 0.78
+  },
+  {
+   "t": 10,
+   "kind": "count_tick",
+   "scene": "hearth-warm",
+   "label": "yawn",
+   "intensity": 0.78
+  },
+  {
+   "t": 11,
+   "kind": "scene_cut",
+   "scene": "dawn-window",
+   "label": "04 \u00b7 \u6668\u7a97 \u00b7 Dawn Window",
+   "intensity": 1
+  },
+  {
+   "t": 11.6,
+   "kind": "layer_float",
+   "scene": "dawn-window",
+   "label": "mist-lift",
+   "intensity": 0.78
+  },
+  {
+   "t": 13.2,
+   "kind": "stroke_draw",
+   "scene": "dawn-window",
+   "label": "sunrise",
+   "intensity": 0.78
+  }
+ ]
+}

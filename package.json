@@ -10,6 +10,7 @@
     "audit": "node tools/audit.mjs",
     "render": "node tools/render.mjs",
     "sound": "python3 tools/sound.py",
+    "soundcheck": "python3 tools/soundcheck.py",
     "voice": "python3 tools/voice.py",
     "samples": "python3 tools/samples.py"
   },

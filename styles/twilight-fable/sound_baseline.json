@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "tolerance": {
+    "layer_db": 1.0,
+    "reveal_db": 1.0,
+    "lufs": 1.0,
+    "true_peak_db": 1.0
+  },
+  "cases": {
+    "mirror-lake-cat": {
+      "cues": "sound_cues/mirror-lake-cat.cues.json",
+      "dur": 18,
+      "layers_rms_dbfs": {
+        "music": -28.84,
+        "beds": -46.29,
+        "foley": -42.3
+      },
+      "reveals": [
+        {
+          "t": 14.0,
+          "swell_db": 10.0
+        }
+      ],
+      "loudness": {
+        "lufs_pre": -17.42,
+        "true_peak_pre": -3.38,
+        "lufs": -19.01,
+        "true_peak": -4.96
+      },
+      "wav_sha256": "9c30c20c107855122e7ec03c2d49d85df7412eb5b6805e2396493b41e7a72898",
+      "around_reveal": {
+        "before_rms_dbfs": -49.72,
+        "at_rms_dbfs": -39.96,
+        "after_rms_dbfs": -49.73
+      }
+    },
+    "default-warm-window": {
+      "cues": "sound_cues/default-warm-window.cues.json",
+      "dur": 14,
+      "layers_rms_dbfs": {
+        "music": -29.82,
+        "beds": -39.48,
+        "foley": -45.58
+      },
+      "reveals": [],
+      "loudness": {
+        "lufs_pre": -17.71,
+        "true_peak_pre": -6.12,
+        "lufs": -19.01,
+        "true_peak": -7.41
+      },
+      "wav_sha256": "3ef5448e92db4c68bf36473eb722c773b42391d15c1aec22649ad33616ac80f7"
+    }
+  },
+  "note": "Per-layer numbers are pre-master dBFS from sound.py --report; loudness is after the render.mjs two-pass linear loudnorm (-19 LUFS / -1.5 dBTP target). Regenerate with `python3 tools/soundcheck.py --accept`."
+}
