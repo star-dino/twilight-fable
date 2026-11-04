@@ -508,43 +508,31 @@ export function extractCues(root) {
 }
 
 /**
- * Registers a deterministic semantic audio cue from 2D character acting (`critter2d.js`)
- * or dynamic world primitives (`drawGesturalWave`, `bookDirector` page turns, Wuxia action primitives) into `window.CUES.cues`.
- * Automatically deduplicates cues of the same `(kind, label)` within a physical refractory window (650ms for steps/hops,
- * 420ms for other runtime foley) so multi-frame renders stay idempotent and never stack rapid-fire foley noise.
+ * Records a runtime audio cue from 2D character acting (`styles/twilight-fable/kernel.js`) as a RAW event in
+ * `window.CUES.runtime` (one per rendered frame that meets the trigger; only exact repeats of the same frame are
+ * ignored, so re-rendering a frame is idempotent). No refractory / step-vs-hop decision is made here: that depends on
+ * neighbouring frames, which a given page may never draw (frames are spread over `--workers` pages in any order).
+ * `tools/render.mjs` clears `CUES.runtime` (and `window.__runtimeCueSeen`) before the frame loop, gathers it from every page and calls
+ * `tools/cue_merge.mjs` `mergeCues`, a pure function of the timeline.
  *
  * @param {{ t: number, kind: string, scene?: string, label?: string, intensity?: number }} cue
  */
-const LOCOMOTION_CUE_KINDS = new Set(['paw_step', 'foot_step', 'critter_hop', 'boing_hop', 'cartoon_boing']);
-
 export function registerRuntimeCue(cue) {
-  if (typeof window === 'undefined' || !window.CUES || !Array.isArray(window.CUES.cues)) return;
+  if (typeof window === 'undefined' || !window.CUES) return;
   if (!cue || typeof cue.t !== 'number' || Number.isNaN(cue.t) || cue.t < 0) return;
   const maxDur = window.DUR || window.CUES.dur || 60;
   if (cue.t > maxDur) return;
   const kind = String(cue.kind || 'card_enter');
   const label = String(cue.label || kind);
   const t = +cue.t.toFixed(3);
-  const list = window.CUES.cues;
-  const isLoco = LOCOMOTION_CUE_KINDS.has(kind);
-  const minGap = isLoco ? 0.42 : 0.42;
-  const dup = list.some(
-    (c) => c.kind === kind && (isLoco || (c.label || c.kind) === label) && Math.abs(c.t - t) < minGap
-  );
-  if (dup) return;
-  const entry = {
-    t,
-    kind,
-    scene: cue.scene || 'stage',
-    label,
-    intensity: +clamp(cue.intensity ?? 0.75, 0.15, 1.0).toFixed(2),
-  };
-  if (typeof cue.pitch === 'number' && !Number.isNaN(cue.pitch)) {
-    entry.pitch = +clamp(cue.pitch, 0.5, 2.0).toFixed(3);
-  }
-  if (typeof cue.pan === 'number' && !Number.isNaN(cue.pan)) {
-    entry.pan = +clamp(cue.pan, -1.0, 1.0).toFixed(3);
-  }
+  const scene = cue.scene || 'stage';
+  const list = (window.CUES.runtime ||= []);
+  const seen = (window.__runtimeCueSeen ||= new Set());
+  const key = `${t}|${kind}|${label}|${scene}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+  const entry = { t, kind, scene, label, intensity: +clamp(cue.intensity ?? 0.75, 0.15, 1.0).toFixed(2) };
+  if (typeof cue.pitch === 'number' && !Number.isNaN(cue.pitch)) entry.pitch = +clamp(cue.pitch, 0.5, 2.0).toFixed(3);
+  if (typeof cue.pan === 'number' && !Number.isNaN(cue.pan)) entry.pan = +clamp(cue.pan, -1.0, 1.0).toFixed(3);
   list.push(entry);
-  list.sort((a, b) => a.t - b.t);
 }

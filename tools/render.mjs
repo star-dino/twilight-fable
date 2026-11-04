@@ -24,6 +24,7 @@ import { fileURLToPath } from 'url';
 import { execFileSync, spawnSync } from 'child_process';
 import { launchHtmlCanvasBrowser, createHtmlCanvasPage } from '../engine/browser.mjs';
 import { startStaticServer } from '../engine/server.mjs';
+import { mergeCues } from './cue_merge.mjs';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -247,6 +248,35 @@ export function defaultOutPath(o, name) {
   return path.join(outRoot, 'look', `${o.style || 'page'}_${name}`);
 }
 
+/**
+ * Renders time `t` and screenshots the page to `file`, refusing to keep a blank capture.
+ *
+ * A fresh headless page occasionally returns a white screenshot (no canvas content, only the broken-image glyph of the
+ * unpainted drawable canvas) for the first captures, or a few later ones, while the compositor has not presented the
+ * WebGL canvas yet; the contact sheet and some video frames then come out white, depending on timing/load only.
+ * The world is unaffected (frame state is a pure function of t; re-rendering a frame is idempotent), so retrying is safe.
+ * A blank capture is a JPEG far smaller than any real 2D-art frame, so such captures are retried after
+ * bringing the page to front and waiting two animation frames. If it never recovers: `strict` throws (stills,
+ * so a white sheet can never be written silently), otherwise warns (a video frame can be legitimately near-black).
+ */
+async function capture(page, t, file, { quality = 94, strict = false, width = 1920, height = 1080 } = {}) {
+  const minBytes = Math.round(width * height * 0.012);
+  let last = 0;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    if (attempt > 0) {
+      await page.bringToFront();
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    }
+    await page.evaluate((s) => window.render(s), t);
+    await page.screenshot({ path: file, type: 'jpeg', quality });
+    last = fs.statSync(file).size;
+    if (last >= minBytes) return;
+  }
+  const msg = `render.mjs: capture at t=${t}s stayed blank (${last} bytes) after retries`;
+  if (strict) throw new Error(msg);
+  console.warn(msg);
+}
+
 export async function main(argv = process.argv.slice(2)) {
   const o = parseArgs(argv);
   const { server, baseUrl } = await startStaticServer(REPO_ROOT);
@@ -309,9 +339,8 @@ export async function main(argv = process.argv.slice(2)) {
     const stills = pickRepresentativeStills(o, dur, cues);
     const stillPaths = [];
     for (const [i, t] of stills.entries()) {
-      await page.evaluate((s) => window.render(s), t);
       const p = path.join(tmp, `still_${i}.jpg`);
-      await page.screenshot({ path: p, type: 'jpeg', quality: 95 });
+      await capture(page, t, p, { quality: 95, strict: true, width: o.width, height: o.height });
       stillPaths.push(p);
     }
 
@@ -334,9 +363,8 @@ export async function main(argv = process.argv.slice(2)) {
       const paths = [];
       const labels = [];
       for (const [i, sh] of shots.entries()) {
-        await page.evaluate((s) => window.render(s), sh.t);
         const p = path.join(tmp, `shot_${String(i).padStart(3, '0')}.jpg`);
-        await page.screenshot({ path: p, type: 'jpeg', quality: 90 });
+        await capture(page, sh.t, p, { quality: 90, strict: true, width: o.width, height: o.height });
         paths.push(p);
         labels.push(`S${sh.scene + 1}.${sh.shot + 1} ${sh.size} ${sh.subject} ${sh.dur}s`);
       }
@@ -374,6 +402,15 @@ export async function main(argv = process.argv.slice(2)) {
         pages.push(wp);
       }
 
+      // Runtime cues are raw per-frame events (see registerRuntimeCue). Drop whatever the page load / stills / storyboard
+      // drew so the set is exactly the frames of this render, then merge them as a pure function of the timeline.
+      for (const wp of pages) {
+        await wp.evaluate(() => {
+          if (window.CUES) window.CUES.runtime = [];
+          window.__runtimeCueSeen = new Set();
+        });
+      }
+
       let nextFrame = 0;
       await Promise.all(
         pages.map(async (workerPage) => {
@@ -381,35 +418,20 @@ export async function main(argv = process.argv.slice(2)) {
             const f = nextFrame++;
             if (f >= totalFrames) break;
             const ts = startT + f / o.fps;
-            await workerPage.evaluate((s) => window.render(s), ts);
             const framePath = path.join(framesDir, `frame_${String(f).padStart(5, '0')}.jpg`);
-            await workerPage.screenshot({ path: framePath, type: 'jpeg', quality: 94 });
+            await capture(workerPage, ts, framePath, { width: o.width, height: o.height });
           }
         })
       );
 
       // Collect any runtime acting/foley cues emitted into `window.CUES.cues` across all worker pages.
       // Seed authored DOM cues first so runtime auto-cues yield to hand-authored timing within minGap.
-      const authored = [...(cues?.cues || [])].sort((a, b) => a.t - b.t);
       const runtimeRaw = [];
       for (const wp of pages) {
-        const pageCues = await wp.evaluate(() => window.CUES?.cues || []);
+        const pageCues = await wp.evaluate(() => window.CUES?.runtime || []);
         for (const c of pageCues) runtimeRaw.push(c);
       }
-      runtimeRaw.sort((a, b) => a.t - b.t);
-      const locomotionKinds = new Set(['paw_step', 'foot_step', 'critter_hop']);
-      const domKinds = new Set(['scene_cut', 'card_enter', 'stroke_draw', 'count_tick', 'layer_float']);
-      const allCollectedCues = [];
-      for (const c of [...authored, ...runtimeRaw]) {
-        const isLoco = locomotionKinds.has(c.kind);
-        const cId = `${c.kind}:${c.label || c.kind}`;
-        const minGap = isLoco ? 0.42 : domKinds.has(c.kind) ? 0.08 : 0.42;
-        const dup = allCollectedCues.some(
-          (p) => (isLoco ? p.kind === c.kind : `${p.kind}:${p.label || p.kind}` === cId) && Math.abs(p.t - c.t) < minGap
-        );
-        if (!dup) allCollectedCues.push(c);
-      }
-      allCollectedCues.sort((a, b) => a.t - b.t);
+      const allCollectedCues = mergeCues(cues?.cues || [], runtimeRaw);
       if (cues) cues.cues = allCollectedCues;
       await page.evaluate((merged) => {
         if (window.CUES) window.CUES.cues = merged;
