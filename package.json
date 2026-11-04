@@ -1,0 +1,18 @@
+{
+  "name": "stardino-twilight-fable",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Twilight Fable (暮光柔焦绘本): a standalone HTML-in-Canvas 2D picture-book style with a deterministic renderer and a procedural score.",
+  "scripts": {
+    "serve": "node engine/serve.mjs",
+    "audit": "node tools/audit.mjs",
+    "render": "node tools/render.mjs",
+    "sound": "python3 tools/sound.py",
+    "voice": "python3 tools/voice.py"
+  },
+  "dependencies": {
+    "playwright-core": "^1.63.0"
+  },
+  "license": "MIT"
+}

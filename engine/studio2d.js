@@ -1,0 +1,878 @@
+/**
+ * 2D Painted Stage Engine (`engine/studio2d.js`).
+ *
+ * One painted 2D stage for `twilight-fable`, following the "One Scene = One Painting,
+ * One Scene = One Continuous Move" (`一幕一构图 · 一场一单向微镜`) paradigm:
+ *   1. Canvas optical baseline is ALWAYS locked to full-frame (`baseZoom = vpScale`,
+ *          optical center `(designWidth/2, designHeight/2)`). It NEVER scales the 2D canvas
+ *          by `1.4x–1.7x` to fake a close-up or interpolates zoom back-and-forth between shots.
+ *   2. Shot size (`wide`, `full`, `medium`, `close`, `extreme-close`) is achieved by
+ *          composing the scene's artwork at that scale (e.g. character `scale: 0.55` in a wide
+ *          landscape vs. `scale: 1.45` or `view: 'back'` in a close scene).
+ *   3. Across the entire duration of each scene (`0 .. scene.dur`), the camera executes at
+ *          most ONE gentle, single-direction movement (`static`, `push`, `pull`, `pan`/`track`,
+ *          `rise`, `drop`, `drift`), eliminating zoom ping-pong ("breathing bellows effect").
+ */
+
+import { clamp, lerp, smootherstep, flowStep } from './motion.js';
+
+function layout2DBeats(rawList, sceneDur) {
+  const d = Math.max(0.1, sceneDur || 4);
+  if (!rawList) {
+    return [{ start: 0, dur: d, size: 'full', move: 'static', subject: 'stage' }];
+  }
+  const list = Array.isArray(rawList) ? rawList : [rawList];
+  if (!list.length) {
+    return [{ start: 0, dur: d, size: 'full', move: 'static', subject: 'stage' }];
+  }
+  const fixed = list.reduce((s, sh) => s + (sh.dur || 0), 0);
+  const open = list.filter((sh) => !sh.dur).length;
+  const each = open ? Math.max(0.4, (d - fixed) / open) : 0;
+  let t = 0;
+  return list.map((sh, i) => {
+    const dur = sh.dur || (i === list.length - 1 ? Math.max(0.4, d - t) : each);
+    const entry = { ...sh, start: t, dur };
+    t += dur;
+    return entry;
+  });
+}
+
+/**
+ * Evaluates a single-direction or dramatic variable-speed 2D scroll camera state for an entire scene.
+ *
+ * Supports both:
+ *   1. Gentle contemplative micro-moves (`push`, `pull`, `pan`, `rise`, `drop`, `drift` at ~3.2% dolly).
+ *   2. High-tension dramatic camera choreography (`zoomFrom` / `zoomTo` up to `2.5x <-> 1.0x`,
+ *      `panFrom` / `panTo`, and 3-phase intra-scene rhythm curves: `holdStart` anticipation stillness,
+ *      `burstWindow` rapid push/pull reveal, and `settleWindow` aftermath hold).
+ *
+ * @param {object} sceneMoveSpec - Primary camera move spec for the scene
+ * @param {number} u - Normalized scene progress `0..1` (`localT / scene.dur`)
+ * @param {object} dims - `{ width, height, designWidth, designHeight, sceneDur }`
+ */
+export function evalSceneCamera2D(sceneMoveSpec = {}, u = 0, dims = {}) {
+  const {
+    width = 1920,
+    height = 1080,
+    designWidth = 1920,
+    designHeight = 1080,
+    sceneDur = sceneMoveSpec.sceneDur || sceneMoveSpec.dur || 4.0,
+  } = dims;
+
+  const cx0 = designWidth * 0.5;
+  const cy0 = designHeight * 0.5;
+  const vpScale = Math.min(width / designWidth, height / designHeight);
+  const uNorm = clamp(u, 0, 1);
+  const durSec = Math.max(0.1, Number(sceneDur) || 4.0);
+
+  // Resolve optional 3-phase dramatic timing curve:
+  //   holdStart (anticipation freeze) -> burstWindow (rapid/smooth move) -> settleWindow (aftermath hold)
+  const hasDramaticTiming =
+    sceneMoveSpec.holdStart != null ||
+    sceneMoveSpec.burstWindow != null ||
+    sceneMoveSpec.settleWindow != null;
+
+  let k = 0;
+  let phase = 'flow';
+  if (hasDramaticTiming) {
+    const rawHold = Number(sceneMoveSpec.holdStart ?? 0);
+    const rawSettle = Number(sceneMoveSpec.settleWindow ?? 0);
+    const bw = sceneMoveSpec.burstWindow;
+    const isSecUnit =
+      sceneMoveSpec.unit === 'sec' ||
+      (Array.isArray(bw) && Number(bw[1]) > 1.0) ||
+      rawHold + (typeof bw === 'number' ? bw : 0) + rawSettle > 1.02;
+
+    const toNorm = (v) => clamp(isSecUnit ? v / durSec : v, 0, 1);
+
+    let b0 = toNorm(rawHold);
+    let b1 = 1.0 - toNorm(rawSettle);
+    if (Array.isArray(bw) && bw.length >= 2) {
+      b0 = toNorm(Number(bw[0]) || 0);
+      b1 = toNorm(Number(bw[1]) || 1);
+    } else if (typeof bw === 'number' && bw > 0) {
+      b1 = clamp(b0 + toNorm(bw), b0 + 0.02, 1.0);
+    }
+    if (b1 <= b0 + 0.01) {
+      b1 = clamp(b0 + 0.15, 0.02, 1.0);
+    }
+
+    if (uNorm <= b0) {
+      k = 0;
+      phase = 'holdStart';
+    } else if (uNorm >= b1) {
+      k = 1;
+      phase = 'settle';
+    } else {
+      phase = 'burst';
+      const segU = clamp((uNorm - b0) / Math.max(1e-5, b1 - b0), 0, 1);
+      if (sceneMoveSpec.burstCurve === 'fast-out' || sceneMoveSpec.burstEase === 'out') {
+        const fastOut = 1 - Math.pow(1 - segU, 3);
+        k = lerp(smootherstep(0, 1, segU), fastOut, 0.65);
+      } else {
+        k = smootherstep(0, 1, segU);
+      }
+    }
+  } else {
+    k = flowStep(0, 1, uNorm, sceneMoveSpec.ease ?? 0.22);
+  }
+
+  const moves = String(sceneMoveSpec.move || 'static')
+    .split('+')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const amount = clamp(sceneMoveSpec.amount ?? 1.0, 0.2, 1.5);
+
+  const isDepth =
+    sceneMoveSpec.mode === 'depth' ||
+    sceneMoveSpec.mode === 'multiplane' ||
+    moves.some((m) => m.startsWith('depth-'));
+
+  const vanish =
+    sceneMoveSpec.vanish ||
+    (isDepth ? [designWidth * 0.5, designHeight * 0.42] : [cx0, cy0]);
+  const vanishX = vanish[0];
+  const vanishY = vanish[1];
+
+  const hasCustomZoom = sceneMoveSpec.zoomFrom != null || sceneMoveSpec.zoomTo != null;
+  const hasCustomPan = sceneMoveSpec.panFrom != null || sceneMoveSpec.panTo != null;
+
+  let dolly = 1.0;
+  let panX = 0;
+  let panY = 0;
+  let angleShift = 0;
+
+  if (hasCustomZoom) {
+    const zFrom = clamp(Number(sceneMoveSpec.zoomFrom ?? 1.0), 0.4, 3.5);
+    const zTo = clamp(Number(sceneMoveSpec.zoomTo ?? 1.0), 0.4, 3.5);
+    dolly = lerp(zFrom, zTo, k);
+  }
+
+  if (hasCustomPan) {
+    const pFrom = Array.isArray(sceneMoveSpec.panFrom) ? sceneMoveSpec.panFrom : [0, 0];
+    const pTo = Array.isArray(sceneMoveSpec.panTo) ? sceneMoveSpec.panTo : [0, 0];
+    panX += lerp(Number(pFrom[0]) || 0, Number(pTo[0]) || 0, k);
+    panY += lerp(Number(pFrom[1]) || 0, Number(pTo[1]) || 0, k);
+  }
+
+  for (const m of moves) {
+    if (m === 'push' || m === 'dramatic-push' || m === 'burst-push') {
+      if (!hasCustomZoom) {
+        const span = m === 'push' ? 0.032 * amount : 0.45 * amount;
+        dolly *= lerp(1.0, 1.0 + span, k);
+      }
+    } else if (m === 'pull' || m === 'dramatic-pull' || m === 'reveal-pull') {
+      if (!hasCustomZoom) {
+        const span = m === 'pull' ? 0.032 * amount : 1.2 * amount;
+        dolly *= lerp(1.0 + span, 1.0, k);
+      }
+    } else if (m === 'depth-push') {
+      if (!hasCustomZoom) {
+        // Stronger 2.5D dolly into vanishing point, scaled by parallax per layer
+        dolly *= lerp(1.0, 1.0 + 0.12 * amount, k);
+      }
+    } else if (m === 'depth-pull') {
+      if (!hasCustomZoom) {
+        dolly *= lerp(1.0 + 0.12 * amount, 1.0, k);
+      }
+    } else if (m === 'depth-crane') {
+      if (!hasCustomPan) {
+        // Camera rises/drops over foreground promontory to reveal distant central goal
+        panY += lerp(28, -28, k) * amount;
+      }
+    } else if (m === 'depth-pan') {
+      if (!hasCustomPan) {
+        // Lateral parallax sweep across planes
+        panX += lerp(-48, 48, k) * amount;
+      }
+    } else if (m === 'pan' || m === 'track' || m === 'truck') {
+      if (!hasCustomPan) {
+        panX += lerp(-20, 20, k) * amount;
+      }
+    } else if (m === 'orbit') {
+      angleShift += lerp(-16, 16, k) * amount;
+    } else if (m === 'rise' || m === 'crane') {
+      if (!hasCustomPan) {
+        panY += lerp(14, -14, k) * amount;
+      }
+    } else if (m === 'drop') {
+      if (!hasCustomPan) {
+        panY += lerp(-14, 14, k) * amount;
+      }
+    } else if (m === 'drift') {
+      if (!hasCustomPan) {
+        panX += lerp(-14, 14, k) * amount;
+        panY += lerp(9, -9, k) * amount;
+      }
+    }
+  }
+
+  const zoom = vpScale * dolly;
+
+  return {
+    cx: cx0 + panX,
+    cy: cy0 + panY,
+    focusX: vanishX,
+    focusY: vanishY,
+    vanishX,
+    vanishY,
+    panX,
+    panY,
+    angleShift,
+    dolly,
+    zoom,
+    progress: k,
+    u: uNorm,
+    phase,
+    roll: ((sceneMoveSpec.rollDeg ?? 0) * Math.PI) / 180,
+    isDepth: Boolean(isDepth),
+    mode: isDepth ? 'depth' : 'flat',
+  };
+}
+
+/**
+ * Creates a style-agnostic 2D Scroll / Canvas Studio (`createStudio2D`).
+ *
+ * @param {object} opts
+ * @param {number} [opts.width=1920]
+ * @param {number} [opts.height=1080]
+ * @param {number} [opts.designWidth=1920]
+ * @param {number} [opts.designHeight=1080]
+ * @param {Array}  [opts.scenes=[]]
+ * @param {function} [opts.getLookState] - Optional `(frame) => lookState`
+ * @param {function} [opts.drawBackdrop] - Optional `(ctx, width, height, lookState, camOffset, frame) => void`
+ */
+export function createStudio2D({
+  width = 1920,
+  height = 1080,
+  designWidth = 1920,
+  designHeight = 1080,
+  scenes = [],
+  getLookState = null,
+  drawBackdrop = null,
+  drawTransition = null,
+} = {}) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d', { alpha: false });
+
+  const cx0 = designWidth * 0.5;
+  const cy0 = designHeight * 0.5;
+  const vpScale = Math.min(width / designWidth, height / designHeight);
+
+  let activeCam = evalSceneCamera2D({ move: 'static' }, 0, {
+    width,
+    height,
+    designWidth,
+    designHeight,
+  });
+
+  ctx.__inkViewport = { width, height };
+  ctx.__inkCam = activeCam;
+
+  /**
+   * 2D Scene & Storyboard Director (`director({ subjects, shots, prepare })`).
+   *
+   * Evaluates ONE continuous, single-direction camera move per scene (`0 .. scene.dur`)
+   * so the 2D canvas never zooms in and out mid-scene or across scene cuts.
+   * Supports both:
+   *   - Single-move per scene: `shots: { 'act1': { size: 'wide', move: 'push', subject: 'valley' } }`
+   *   - Multi-beat array per scene: `shots: { 'act1': [ { dur: 1.8, ... }, { dur: 1.8, ... } ] }`
+   *     (used as storyboard inspection timestamps while locking the scene's camera to a single move).
+   */
+  function director({ subjects = {}, shots = {}, prepare = null } = {}) {
+    const table = scenes.map((sc, sIdx) => {
+      const fromArray = Array.isArray(shots)
+        ? shots.filter((s) => s.scene === sIdx || s.scene === sc.id)
+        : null;
+      const rawList =
+        (fromArray && fromArray.length ? fromArray : null) ||
+        shots[sc.id] ||
+        shots[sc.el?.id] ||
+        shots[sc.el?.dataset?.scene] ||
+        shots[sIdx] ||
+        [{ size: 'full', move: 'static', subject: Object.keys(subjects)[0] || 'stage' }];
+
+      const beatList = layout2DBeats(rawList, sc.dur);
+      // Select one unified camera move for the entire scene (preferring beats with explicit dramatic parameters or non-static move)
+      const dramaticBeat = beatList.find(
+        (b) =>
+          b.zoomFrom != null ||
+          b.zoomTo != null ||
+          b.panFrom != null ||
+          b.panTo != null ||
+          b.holdStart != null ||
+          b.burstWindow != null ||
+          b.settleWindow != null
+      );
+      const basePrimary =
+        dramaticBeat ||
+        beatList.find((b) => b.move && b.move !== 'static') ||
+        beatList[0] ||
+        { move: 'static' };
+      const primaryMoveShot = {
+        ...basePrimary,
+        sceneDur: sc.dur,
+      };
+
+      return {
+        scene: sc,
+        index: sIdx,
+        beats: beatList,
+        primaryMove: primaryMoveShot,
+      };
+    });
+
+    function update(frame) {
+      if (typeof prepare === 'function') {
+        prepare(frame);
+      }
+      const sIdx = clamp(frame.sceneIndex ?? 0, 0, Math.max(0, table.length - 1));
+      const entry = table[sIdx];
+      if (!entry) return activeCam;
+
+      const localT = frame.localT ?? 0;
+      const sceneDur = Math.max(0.1, entry.scene?.dur || 4.0);
+      const sceneU = clamp(localT / sceneDur, 0, 1);
+
+      activeCam = evalSceneCamera2D(entry.primaryMove, sceneU, {
+        width,
+        height,
+        designWidth,
+        designHeight,
+        sceneDur,
+      });
+      ctx.__inkCam = activeCam;
+      return activeCam;
+    }
+
+    function storyboard() {
+      const out = [];
+      for (const entry of table) {
+        for (const [bIdx, beat] of entry.beats.entries()) {
+          const sampleLocalT =
+            beat.sampleAt != null
+              ? +clamp(beat.sampleAt, 0, entry.scene.dur).toFixed(2)
+              : +(beat.start + beat.dur * 0.78).toFixed(2);
+          const midT = +(entry.scene.start + sampleLocalT).toFixed(2);
+          if (typeof prepare === 'function') {
+            prepare({
+              sceneIndex: entry.index,
+              localT: sampleLocalT,
+              t: midT,
+              scene: entry.scene,
+            });
+          }
+          const subName =
+            typeof beat.subject === 'string'
+              ? beat.subject
+              : Object.keys(subjects)[0] || `scene-${entry.index + 1}`;
+          out.push({
+            scene: entry.index,
+            shot: bIdx,
+            t: midT,
+            dur: +beat.dur.toFixed(2),
+            size: beat.size || 'full',
+            subject: subName,
+            box: [designWidth, designHeight],
+            is2D: true,
+            warn: [],
+          });
+        }
+      }
+      return out;
+    }
+
+    return {
+      update,
+      storyboard,
+      get camera() {
+        return activeCam;
+      },
+    };
+  }
+
+  /**
+   * Begins drawing a 2D world-space plane at depth `parallax`
+   * (`1.0` = main foreground stage, `< 1.0` = mid/far background plane, `> 1.0` = close foreground).
+   * Optional `opts.vanish = [vx, vy]` overrides active camera's vanishing point.
+   */
+  function beginLayer(parallax = 1.0, opts = {}) {
+    const p = clamp(parallax, 0.05, 2.5);
+    if (ctx.__sceneGraph) {
+      ctx.__sceneGraph.layerStack.push(p);
+      ctx.__sceneGraph.currentLayerZ = p;
+    }
+    ctx.save();
+
+    const vx = opts.vanish ? opts.vanish[0] : (activeCam.vanishX ?? cx0);
+    const vy = opts.vanish ? opts.vanish[1] : (activeCam.vanishY ?? cy0);
+
+    const baseZoom = vpScale;
+    // When dolly changes, plane p scales according to its parallax
+    // e.g. p = 0.15 -> 1 + (dolly-1)*0.15 (~1.02x), p = 0.5 -> ~1.06x, p = 1.0 -> dolly, p = 1.25 -> 1 + (dolly-1)*1.25
+    const effZoom = Math.max(0.15 * vpScale, baseZoom * (1.0 + ((activeCam.dolly ?? 1.0) - 1.0) * p));
+
+    const screenVx = (vx - cx0) * vpScale + width * 0.5;
+    const screenVy = (vy - cy0) * vpScale + height * 0.5;
+
+    ctx.translate(screenVx, screenVy);
+    if (activeCam.roll) ctx.rotate(activeCam.roll);
+    ctx.scale(effZoom, effZoom);
+
+    const layerOffsetX =
+      activeCam.panX * p +
+      (activeCam.angleShift || 0) * (p - 1.0);
+    const layerOffsetY =
+      activeCam.panY * p;
+
+    ctx.translate(-vx - layerOffsetX, -vy - layerOffsetY);
+  }
+
+  function endLayer() {
+    if (ctx.__sceneGraph && ctx.__sceneGraph.layerStack.length > 1) {
+      ctx.__sceneGraph.layerStack.pop();
+      ctx.__sceneGraph.currentLayerZ =
+        ctx.__sceneGraph.layerStack[ctx.__sceneGraph.layerStack.length - 1] ?? 1.0;
+    }
+    ctx.restore();
+  }
+
+  function render(frame, drawWorldFn) {
+    const lookState = typeof getLookState === 'function' ? getLookState(frame) : null;
+    const camOffset = [activeCam.cx - cx0, activeCam.cy - cy0];
+
+    ctx.__inkFrame = frame;
+    ctx.__sceneGraph = {
+      items: [],
+      interactions: [],
+      issues: [],
+      layerStack: [1.0],
+      currentLayerZ: 1.0,
+      drawSeq: 0,
+      frame,
+    };
+
+    ctx.save();
+    ctx.clearRect(0, 0, width, height);
+    if (typeof drawBackdrop === 'function') {
+      drawBackdrop(ctx, width, height, lookState, camOffset, frame);
+    }
+    if (typeof drawWorldFn === 'function') {
+      drawWorldFn({
+        ctx,
+        width,
+        height,
+        frame,
+        look: lookState,
+        camera: activeCam,
+        beginLayer,
+        endLayer,
+      });
+    }
+    if (typeof drawTransition === 'function') {
+      drawTransition(ctx, width, height, lookState, frame);
+    }
+    ctx.restore();
+
+    // Evaluate 2D spatial semantics & occlusion order for `tools/audit.mjs`
+    evaluateSceneGraph2D(ctx.__sceneGraph);
+    if (typeof window !== 'undefined') {
+      window.__STYLEHOP_SPATIAL_AUDIT = ctx.__sceneGraph;
+    }
+  }
+
+  const studioApi = {
+    canvas,
+    ctx,
+    width,
+    height,
+    director,
+    getLookState,
+    beginLayer,
+    endLayer,
+    render,
+    renderPlanes: (planes, renderOpts) => renderDepthPlanes(ctx, studioApi, planes, renderOpts),
+    evalTraversal: (t, waypoints, travOpts) => evalDepthTraversal(t, waypoints, travOpts),
+    get camera() {
+      return activeCam;
+    },
+  };
+
+  return studioApi;
+}
+
+// ---------------------------------------------------------------------------
+// Section II: Generic 2.5D Depth Vista & Traversal Engine (ADR-010 / ADR-015)
+// ---------------------------------------------------------------------------
+
+let _studioSoftCanvas = null;
+let _studioSoftCtx = null;
+
+function drawStudioSoftPass(ctx, drawFn, softness = 4) {
+  const soft = Math.max(0, softness);
+  const k = clamp(1 / (1 + soft * 0.4), 0.1, 1);
+  const cw = ctx.canvas.width;
+  const ch = ctx.canvas.height;
+  const w = Math.max(1, Math.ceil(cw * k));
+  const h = Math.max(1, Math.ceil(ch * k));
+  if (!_studioSoftCanvas) {
+    _studioSoftCanvas = document.createElement('canvas');
+    _studioSoftCtx = _studioSoftCanvas.getContext('2d');
+  }
+  if (_studioSoftCanvas.width < w || _studioSoftCanvas.height < h) {
+    _studioSoftCanvas.width = Math.max(_studioSoftCanvas.width, w);
+    _studioSoftCanvas.height = Math.max(_studioSoftCanvas.height, h);
+  }
+  const m = ctx.getTransform();
+  _studioSoftCtx.save();
+  _studioSoftCtx.setTransform(1, 0, 0, 1, 0, 0);
+  _studioSoftCtx.clearRect(0, 0, w, h);
+  _studioSoftCtx.setTransform(m.a * k, m.b * k, m.c * k, m.d * k, m.e * k, m.f * k);
+  drawFn(_studioSoftCtx);
+  _studioSoftCtx.restore();
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(_studioSoftCanvas, 0, 0, w, h, 0, 0, cw, ch);
+  ctx.restore();
+}
+
+/**
+ * Evaluates a multi-plane traversal across depth planes with natural occlusion
+ * disappearance and foreground re-emergence.
+ *
+ * @param {number} t - Current scene or timeline time in seconds
+ * @param {Array<object>} waypoints - Array of leg descriptors:
+ *   - plane: depth plane id or parallax number (e.g. 0.45, 0.75, 1.0)
+ *   - t0, t1: active time window [t0, t1]
+ *   - fromX, toX: horizontal range in design units
+ *   - fromY, toY: optional vertical range
+ *   - groundAt: optional (x) => y profile function
+ *   - scale: optional actor scale (defaults to lerp(0.32, 1.0, plane))
+ *   - facing: optional ±1 direction (defaults to toX >= fromX ? 1 : -1)
+ *   - view: optional 'side' | '3q' | 'front' | 'back' (default 'side')
+ *   - enterHideY: px to smoothly rise up from behind the crest at start of leg
+ *   - exitHideY: px to smoothly dip down behind the crest at end of leg
+ *   - hideDur: duration of dip/rise transition in seconds (default ~0.35s)
+ *   - ease: optional easing function (default smootherstep)
+ *   - haze: optional haze amount (default derived from depth)
+ * @param {object} [opts]
+ * @returns {object} { activePlane, plane, x, groundY, baseY, scale, facing, view, visible, legIndex, legU, hazeAmount, yOffset, isEmerging, isHiding }
+ */
+export function evalDepthTraversal(t, waypoints = [], opts = {}) {
+  if (!Array.isArray(waypoints) || !waypoints.length) {
+    return {
+      activePlane: null,
+      plane: 1.0,
+      x: 0,
+      groundY: 0,
+      baseY: 0,
+      scale: 1.0,
+      facing: 1,
+      view: 'side',
+      visible: false,
+      legIndex: -1,
+      legU: 0,
+      hazeAmount: 0,
+      yOffset: 0,
+      isEmerging: false,
+      isHiding: false,
+    };
+  }
+
+  const sorted = [...waypoints].sort((a, b) => a.t0 - b.t0);
+  const first = sorted[0];
+  const last = sorted[sorted.length - 1];
+
+  let leg = null;
+  let legIdx = -1;
+  let inGap = false;
+
+  for (let i = 0; i < sorted.length; i++) {
+    const w = sorted[i];
+    if (t >= w.t0 && t <= w.t1) {
+      leg = w;
+      legIdx = i;
+      break;
+    }
+    if (i < sorted.length - 1 && t > w.t1 && t < sorted[i + 1].t0) {
+      inGap = true;
+      legIdx = i;
+      break;
+    }
+  }
+
+  if (inGap) {
+    // Hidden behind ridge/trees between legs
+    const prevLeg = sorted[legIdx];
+    const nextLeg = sorted[legIdx + 1];
+    const gapU = (t - prevLeg.t1) / Math.max(1e-4, nextLeg.t0 - prevLeg.t1);
+    const pPrev = typeof prevLeg.plane === 'number' ? prevLeg.plane : 1.0;
+    const pNext = typeof nextLeg.plane === 'number' ? nextLeg.plane : 1.0;
+    const planeEst = lerp(pPrev, pNext, gapU);
+    const scaleEst = lerp(
+      prevLeg.scale ?? lerp(0.32, 1.0, clamp(pPrev, 0, 1.2)),
+      nextLeg.scale ?? lerp(0.32, 1.0, clamp(pNext, 0, 1.2)),
+      gapU
+    );
+    const baseY = typeof prevLeg.groundAt === 'function' ? prevLeg.groundAt(prevLeg.toX) : (prevLeg.toY ?? 0);
+    return {
+      activePlane: null,
+      plane: planeEst,
+      x: lerp(prevLeg.toX, nextLeg.fromX, gapU),
+      groundY: baseY + 80,
+      baseY,
+      scale: scaleEst,
+      facing: prevLeg.facing ?? (prevLeg.toX >= prevLeg.fromX ? 1 : -1),
+      view: prevLeg.view ?? 'side',
+      visible: false,
+      legIndex: legIdx,
+      legU: gapU,
+      hazeAmount: clamp((1.0 - planeEst) * 0.75, 0, 1.0),
+      yOffset: 80,
+      isEmerging: false,
+      isHiding: true,
+    };
+  }
+
+  if (!leg) {
+    if (t < first.t0) {
+      leg = first;
+      legIdx = 0;
+      t = first.t0;
+    } else {
+      leg = last;
+      legIdx = sorted.length - 1;
+      t = last.t1;
+    }
+  }
+
+  const legDur = Math.max(1e-4, leg.t1 - leg.t0);
+  const legU = clamp((t - leg.t0) / legDur, 0, 1);
+  const k = typeof leg.ease === 'function' ? leg.ease(legU) : smootherstep(0, 1, legU);
+  const x = lerp(leg.fromX, leg.toX, k);
+
+  let baseY = 0;
+  if (typeof leg.groundAt === 'function') {
+    baseY = leg.groundAt(x);
+  } else if (Number.isFinite(leg.fromY) && Number.isFinite(leg.toY)) {
+    baseY = lerp(leg.fromY, leg.toY, k);
+  } else {
+    baseY = leg.fromY ?? 0;
+  }
+
+  const hideDur = leg.hideDur ?? Math.min(0.45, legDur * 0.3);
+  let yOffset = 0;
+  let isEmerging = false;
+  let isHiding = false;
+
+  if (leg.enterHideY && (t - leg.t0) < hideDur) {
+    isEmerging = true;
+    const eu = clamp((t - leg.t0) / hideDur, 0, 1);
+    yOffset = lerp(leg.enterHideY, 0, smootherstep(0, 1, eu));
+  } else if (leg.exitHideY && (leg.t1 - t) < hideDur) {
+    isHiding = true;
+    const hu = clamp((leg.t1 - t) / hideDur, 0, 1);
+    yOffset = lerp(leg.exitHideY, 0, smootherstep(0, 1, hu));
+  }
+
+  const planeNum = typeof leg.plane === 'number' ? leg.plane : 1.0;
+  const defaultScale = lerp(0.32, 1.0, clamp(planeNum, 0, 1.2));
+  const scale = leg.scale ?? defaultScale;
+  const facing = leg.facing ?? (leg.toX >= leg.fromX ? 1 : -1);
+  const view = leg.view ?? 'side';
+  const hazeAmount = leg.haze ?? clamp((1.0 - planeNum) * 0.75, 0, 1.0);
+
+  return {
+    activePlane: leg.plane,
+    plane: leg.plane,
+    x,
+    groundY: baseY + yOffset,
+    baseY,
+    scale,
+    facing,
+    view,
+    visible: true,
+    legIndex: legIdx,
+    legU,
+    hazeAmount,
+    yOffset,
+    isEmerging,
+    isHiding,
+  };
+}
+
+/**
+ * Renders back-to-front depth planes with automatic parallax layer transforms,
+ * optical defocus for far layers, and actor occlusion ordering.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {object} studio - Studio2D instance
+ * @param {Array<object>} planes - Array of plane descriptors:
+ *   - parallax: depth number (e.g. 0.15 horizon, 0.45 far-mid, 0.75 mid, 1.15 foreground)
+ *   - softness: optional blur amount (e.g. 4 for distant hills)
+ *   - actors: optional array of actor callbacks or objects { draw(ctx) }
+ *   - draw: (ctx) => void
+ *   - drawFore: optional (ctx) => void
+ *   - layerOpts: optional options passed to beginLayer
+ * @param {object} [opts]
+ */
+export function renderDepthPlanes(ctx, studio, planes = [], opts = {}) {
+  if (!Array.isArray(planes) || !planes.length) return;
+  const sorted = [...planes].sort((a, b) => (a.parallax ?? 1.0) - (b.parallax ?? 1.0));
+
+  for (const plane of sorted) {
+    const p = plane.parallax ?? 1.0;
+    const renderContent = (targetCtx) => {
+      studio.beginLayer(p, plane.layerOpts);
+      if (typeof plane.draw === 'function') {
+        plane.draw(targetCtx);
+      }
+      if (Array.isArray(plane.actors)) {
+        for (const actor of plane.actors) {
+          if (typeof actor === 'function') actor(targetCtx);
+          else if (actor && typeof actor.draw === 'function') actor.draw(targetCtx);
+        }
+      }
+      if (typeof plane.drawFore === 'function') {
+        plane.drawFore(targetCtx);
+      }
+      studio.endLayer();
+    };
+
+    if (plane.softness && plane.softness > 0) {
+      if (typeof opts.drawSoftLayer === 'function') {
+        opts.drawSoftLayer(ctx, renderContent, { softness: plane.softness });
+      } else {
+        drawStudioSoftPass(ctx, renderContent, plane.softness);
+      }
+    } else {
+      renderContent(ctx);
+    }
+  }
+}
+
+/**
+ * Creates a 2.5D Multi-Plane Scroll / Canvas Studio (`createMultiPlaneStage`).
+ */
+export function createMultiPlaneStage(opts = {}) {
+  const studio = createStudio2D(opts);
+  return {
+    ...studio,
+    renderPlanes: (planes, renderOpts) => renderDepthPlanes(studio.ctx, studio, planes, renderOpts),
+    evalTraversal: (t, waypoints, travOpts) => evalDepthTraversal(t, waypoints, travOpts),
+  };
+}
+
+/**
+ * Registers a drawn 2D scene element into `ctx.__sceneGraph` for automated
+ * Z-order occlusion (`z_order_inversion`) and ground-contact (`ground_contact_error`) auditing.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {object} item
+ * @param {string} item.id
+ * @param {'bg'|'mid'|'hero'|'fg'|'prop'} [item.role='prop']
+ * @param {string} [item.kind]
+ * @param {[number, number, number, number]} item.bbox - `[x0, y0, x1, y1]` in design coordinates
+ * @param {number} [item.layerZ]
+ * @param {boolean} [item.isHero=false]
+ * @param {number} [item.footY]
+ * @param {number} [item.groundY]
+ * @param {number} [item.groundTolerance=32]
+ * @param {boolean} [item.airborne=false]
+ */
+export function recordSceneElement2D(ctx, item = {}) {
+  const sg = ctx?.__sceneGraph;
+  if (!sg || !Array.isArray(item.bbox) || item.bbox.length < 4) return;
+  const [x0, y0, x1, y1] = item.bbox;
+  if (!Number.isFinite(x0) || !Number.isFinite(y0) || !Number.isFinite(x1) || !Number.isFinite(y1)) return;
+  sg.drawSeq += 1;
+  sg.items.push({
+    id: item.id || `${item.kind || item.role || 'item'}#${sg.drawSeq}`,
+    role: item.role || (item.isHero ? 'hero' : 'prop'),
+    kind: item.kind || item.role || 'prop',
+    layerZ: item.layerZ ?? sg.currentLayerZ ?? 1.0,
+    drawSeq: sg.drawSeq,
+    bbox: [Math.min(x0, x1), Math.min(y0, y1), Math.max(x0, x1), Math.max(y0, y1)],
+    isHero: Boolean(item.isHero || item.role === 'hero'),
+    footY: item.footY ?? null,
+    groundY: item.groundY ?? null,
+    groundTolerance: item.groundTolerance ?? 32,
+    airborne: Boolean(item.airborne),
+  });
+}
+
+/**
+ * Registers an interaction contact-point distance check (`interaction_miss`) into `ctx.__sceneGraph`.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {object} check - `{ actor, action, socket, dist, maxDist, targetLabel, t }`
+ */
+export function recordInteractionCheck2D(ctx, check = {}) {
+  const sg = ctx?.__sceneGraph;
+  if (!sg) return;
+  const dist = Number(check.dist ?? 0);
+  const maxDist = Number(check.maxDist ?? 28);
+  const passed = dist <= maxDist;
+  sg.interactions.push({
+    mode: '2d',
+    actor: check.actor || 'hero',
+    action: check.action || 'interact',
+    socket: check.socket || 'handTipR',
+    targetLabel: check.targetLabel || 'target',
+    dist: +dist.toFixed(2),
+    maxDist: +maxDist.toFixed(2),
+    passed,
+    t: +(check.t ?? sg.frame?.localT ?? 0).toFixed(3),
+  });
+}
+
+function evaluateSceneGraph2D(sg) {
+  if (!sg) return;
+  const heroes = sg.items.filter((it) => it.isHero);
+  for (const hero of heroes) {
+    const [hx0, hy0, hx1, hy1] = hero.bbox;
+    const hArea = Math.max(1, (hx1 - hx0) * (hy1 - hy0));
+
+    // 1. Check Z-order inversions: a deeper background layer (`layerZ < hero.layerZ - 0.05` or `role === 'bg'`)
+    // drawn AFTER the hero (`drawSeq > hero.drawSeq`) and occluding > 8% of the hero's bounding box.
+    for (const other of sg.items) {
+      if (other === hero || other.drawSeq <= hero.drawSeq) continue;
+      const isDeeperLayer = other.layerZ < hero.layerZ - 0.05 || other.role === 'bg';
+      if (!isDeeperLayer) continue;
+      const ix = Math.max(0, Math.min(hx1, other.bbox[2]) - Math.max(hx0, other.bbox[0]));
+      const iy = Math.max(0, Math.min(hy1, other.bbox[3]) - Math.max(hy0, other.bbox[1]));
+      const ratio = (ix * iy) / hArea;
+      if (ratio > 0.08) {
+        sg.issues.push({
+          kind: 'z_order_inversion',
+          detail: `Background "${other.id}" (z=${other.layerZ.toFixed(2)}, seq=${other.drawSeq}) drawn after hero "${hero.id}" (z=${hero.layerZ.toFixed(2)}, seq=${hero.drawSeq}), occluding ${(ratio * 100).toFixed(1)}%`,
+        });
+      }
+    }
+
+    // 2. Check Ground Contact (`ground_contact_error`) when explicit `groundY` is provided
+    if (hero.footY != null && hero.groundY != null && !hero.airborne) {
+      const dy = Math.abs(hero.footY - hero.groundY);
+      if (dy > hero.groundTolerance) {
+        sg.issues.push({
+          kind: 'ground_contact_error',
+          detail: `Hero "${hero.id}" footY=${hero.footY.toFixed(1)} deviates ${dy.toFixed(1)}px (> ${hero.groundTolerance}px) from groundY=${hero.groundY.toFixed(1)}`,
+        });
+      }
+    }
+  }
+
+  // 3. Check Interaction Contact Distance (`interaction_miss`)
+  for (const chk of sg.interactions) {
+    if (!chk.passed) {
+      sg.issues.push({
+        kind: 'interaction_miss',
+        detail: `${chk.actor}.${chk.action} (${chk.socket} -> ${chk.targetLabel}) missed contact: dist=${chk.dist}px > max=${chk.maxDist}px at t=${chk.t}s`,
+      });
+    }
+  }
+}
