@@ -379,3 +379,68 @@ Shot size comes from **re-composing** the artwork. Judge by the protagonist's on
       → inspect every frame yourself.
 - [ ] `python3 tools/lookcheck.py --style twilight-fable --world … --content …`
       → readability floors OK **and** `ORIGINALITY: OK` (no CLONE vs showcase or other topics).
+
+---
+
+## 8. Sound (`声音`)
+
+The soundtrack is recorded CC0 material mixed by `tools/sound.py` from the cue sheet that `render.mjs` extracts from the
+page (see `tools/sound_samples.py` and `SOUND_CREDITS.md`). The mix has one hierarchy: **character and score lead, the
+environment follows, and the environment only comes forward when the picture opens a new space.**
+
+### 8a. Mix rules
+
+| Rule | What it means |
+|---|---|
+| **Ambience stays low.** | Beds sit about 17 dB under the score and a few dB under the foley (mirror-lake-cat baseline, pre-master RMS: music -28.8, foley -42.9, beds -46.3 dBFS). They are a floor of place, never a layer to notice. The beds also duck ~1.5 dB under each foley hit. |
+| **The environment swells only at a reveal.** | A *reveal* is a new-space moment in the picture: moving a stone opens a new scene, a door or curtain opens, the camera pulls out to a sky. At that moment the bed rises (up to +10 dB, ~0.9 s attack), holds ~1.3 s, then **recedes back to the character** over ~2 s. The score dips ~1.5 dB while it holds. |
+| **At most 1-2 reveals per film.** | A swell is only an event if it is rare. More than two turns the film into clutter and the character stops leading. One reveal is the default; a second is allowed only in a film longer than ~30 s with a second genuine change of space. |
+| **No reveal = flat low beds.** | Most scenes declare no `data-reveal`. Do not use reveals to add "energy" to a scene whose space does not change. |
+| **Every scene declares its sound.** | New films give every scene a `data-bed` and a `data-mood`, and a `data-reveal` only on the one or two reveal scenes. (The default sample `scenes.html` predates this and relies on the per-index defaults: bed `night+stream`, `dusk+night`, `hearth+room`, `dawn+dusk` with moods `night`, `door`, `hearth`, `dawn`.) |
+| **CC0 only.** | Every recording or instrument sample must be CC0-1.0. Add it to `tools/samples.manifest.json` (id, source URL, `license: "CC0-1.0"`, pinned `sha256`, `uses`) and run `python3 tools/samples.py credits`. `samples.py` aborts on any other licence. Never commit audio; the pack is fetched by `npm run init`. |
+
+### 8b. Scene declarations
+
+On each `<section>` / scene element in `scenes.html`:
+
+```html
+data-bed="lake,frogs:-8"        <!-- bed groups, comma separated; optional ":dB" offset per group -->
+data-mood="lake-night"          <!-- the scene's musical motif -->
+data-reveal="0.4:10"            <!-- optional; "<local seconds>[:<swell dB, max 10>]" -->
+```
+
+- **`data-bed`**: list of 1-3 groups, first is the main one (0 dB). A group without `:dB` is placed `-7 dB` per position below
+  the previous (`"lake,frogs"` = lake 0 dB, frogs -7 dB). The `bed.` prefix is optional. Beds cross-fade (0.85 s) at scene cuts.
+  Available groups:
+
+  | group | recording character |
+  |---|---|
+  | `night` | forest at night, crickets, owl |
+  | `stream` | small brook over rocks |
+  | `dusk` | forest summer evening, birds, distant |
+  | `dawn` | dawn chorus |
+  | `hearth` | fireplace crackle |
+  | `room` | very quiet indoor room tone |
+  | `lake` | gentle water lapping on a shore |
+  | `frogs` | night frogs and crickets |
+  | `reeds` | soft night breeze through reeds |
+  | `wind` | soft night breeze (wider, for open sky) |
+
+- **`data-mood`**: which chamber motif plays under the scene (cello foundation, pianissimo piano/harp, soft vibraphone/flute).
+  Available moods: `night`, `door`, `hearth`, `dawn` (the default 4-scene arc, Am9 to Cmaj9) and the nocturnal-lake suite
+  `lake-night`, `mirror`, `play`, `stars` (Dadd9, Bm7/Gmaj9, Gadd9/Asus4, Dmaj9). Undeclared scenes use the mood for their
+  scene index.
+- **`data-reveal`**: `0.4:10` = 0.4 s into this scene, swell +10 dB (default +8 dB when omitted). It can also be
+  a runtime cue of `kind: 'reveal'` (`gain_db` or `intensity`x10 dB). Place it on the frame where the new space is
+  *seen* (the stone moves, the surface opens), not where the shot begins.
+
+### 8c. Checks
+
+- Foley comes from runtime cues (`paw_step`, `water_ripple`, `spirit_shimmer`, ...) the world emits; keep one step cue
+  per footfall (the renderer de-duplicates within 0.42 s).
+- Run `python3 tools/soundcheck.py` after any change to `tools/sound*.py`, `tools/samples.manifest.json`, or the sound
+  declarations of a baseline film. It re-renders the stored cue sheets and fails (exit 1) when a layer drifts more than 1 dB,
+  the loudness more than 1 LU, or a reveal swell more than 1 dB. After a *listened-to, intended* change run
+  `python3 tools/soundcheck.py --accept`. New film: `SOUND_DUMP_CUES=cues.json node tools/render.mjs ... --video x.mp4`, then
+  `python3 tools/soundcheck.py --add <slug> cues.json`.
+- Final video loudness is two-pass linear `loudnorm` at -19 LUFS / -1.5 dBTP (no dynamics pumping), set by `render.mjs`.
