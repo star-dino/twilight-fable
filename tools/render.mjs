@@ -13,7 +13,7 @@
  * Usage:
  *   node tools/render.mjs --style twilight-fable \
  *     [--scene all|0|1...] [--size 1920x1080] [--fps 30] [--workers 2] \
- *     [--sheet <work-dir>/sheet.jpg] [--storyboard <work-dir>/storyboard.jpg] [--video <work-dir>/twilight-fable.mp4] [--no-audio]
+ *     [--sheet <work-dir>/sheet.jpg] [--storyboard <work-dir>/storyboard.jpg] [--video <work-dir>/twilight-fable.mp4] [--no-audio] [--samples auto|on|off]
  *     [--voice <product>/voice.json [--duck-db -10] [--voice-gain 0] [--srt <file>.srt] | --no-voice]
  */
 
@@ -69,6 +69,7 @@ export function parseArgs(argv) {
     else if (a === '--storyboard') o.storyboard = hasVal() ? path.resolve(next()) : true;
     else if (a === '--video') o.video = path.resolve(next());
     else if (a === '--no-audio') o.audio = false;
+    else if (a === '--samples') o.samples = next(); // auto | on | off (recorded CC0 layers from `npm run init`)
     else if (a === '--preset') o.preset = next();
     else if (a === '--voice') o.voice = path.resolve(next());
     else if (a === '--no-voice') o.noVoice = true;
@@ -79,7 +80,7 @@ export function parseArgs(argv) {
   }
   if (!o.page && !o.style) {
     console.error(
-      'Usage: node tools/render.mjs --style <id> [--scene all|0|1...] [--size WxH] [--fps 30] [--workers 2] [--sheet f.jpg] [--storyboard f.jpg] [--video f.mp4] [--no-audio]\n' +
+      'Usage: node tools/render.mjs --style <id> [--scene all|0|1...] [--size WxH] [--fps 30] [--workers 2] [--sheet f.jpg] [--storyboard f.jpg] [--video f.mp4] [--no-audio] [--samples auto|on|off]\n' +
         '       (default --sheet/--storyboard: <world dir>/ for --world, else $STYLEHOP_OUT/look/<style>_*.jpg; never a repo file)\n' +
         '       node tools/render.mjs --style <id> --video f.mp4 --voice <dir>/voice.json [--duck-db -10] [--voice-gain 0] [--srt f.srt]\n' +
         '       node tools/render.mjs --page <dir|file.html> ...'
@@ -443,6 +444,7 @@ export async function main(argv = process.argv.slice(2)) {
           '--preset',
           soundPreset,
         ];
+        if (o.samples) soundArgs.push('--samples', o.samples);
         if (voiceWav) {
           soundArgs.push('--voice', voiceWav, '--duck-db', String(o.duckDb), '--voice-gain', String(o.voiceGain));
         }

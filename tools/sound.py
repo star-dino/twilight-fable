@@ -9,6 +9,9 @@ felt-piano chords and cello, a nocturnal-forest hall shimmer, soft noise-free fo
 (paw step, ear perk, critter hop, water ripple, spirit shimmer, wood creak) and a
 warm high-roll-off master bus.
 
+Recorded mode: after `npm run init` (tools/samples.py fetch) the score, ambience beds and foley come from CC0
+recordings (tools/sound_samples.py); without the cache, or with --samples off, everything is synthesized.
+
 Usage:
   python3 tools/sound.py --cues cues.json --out <work-dir>/mix.wav [--preset twilight]
   python3 tools/sound.py --cues cues.json --voice voice.wav --out mix.wav [--duck-db -10] [--voice-gain 0]
@@ -16,6 +19,7 @@ Usage:
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 import wave
@@ -30,6 +34,10 @@ try:
     from audio_grains import ensure_audio_grains
 except Exception:
     ensure_audio_grains = None
+try:
+    import sound_samples  # recorded CC0 layers (beds / sampled music / foley); optional
+except Exception:
+    sound_samples = None
 
 SR = 48000
 
@@ -869,14 +877,14 @@ def _resolve_cue_semantic_action(kind: str, label: str) -> str:
     return "card_enter"
 
 
-def master_bus(stereo: np.ndarray, ceiling_db: float = -1.2) -> np.ndarray:
+def master_bus(stereo: np.ndarray, ceiling_db: float = -1.2, lp_hz: float = 2600.0) -> np.ndarray:
     """Warm tonal shaping, DC block, dynamic-range-preserving leveling, and true-peak limiting."""
     # High-pass to remove DC/rumble
     sos_hp = signal.butter(2, 28.0 / (0.5 * SR), btype="high", output="sos")
     out = signal.sosfilt(sos_hp, stereo, axis=0)
 
-    # Warm picture-book nocturnal tone: roll off harsh highs above 2.6 kHz
-    sos_lp = signal.butter(2, 2600.0 / (0.5 * SR), btype="low", output="sos")
+    # Warm picture-book nocturnal tone: roll off harsh highs (2.6 kHz for the synthesized score, ~6.5 kHz for recordings)
+    sos_lp = signal.butter(2, lp_hz / (0.5 * SR), btype="low", output="sos")
     out = signal.sosfilt(sos_lp, out, axis=0)
 
     # Measure RMS only on active (non-silent) regions so dramatic silence holds are never pumped up
@@ -1023,7 +1031,33 @@ def mix_voice_into(
     return out.astype(np.float32)
 
 
-def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 77) -> np.ndarray:
+# Recorded-mode cue routing (kind/label -> recorded foley action, or None to stay silent).
+RECORDED_SILENT = {"scene_cut", "card_enter", "count_tick"}
+RECORDED_LP_HZ = 6500.0
+
+
+def _load_bank(samples: str):
+    """The recorded-sample bank, or None (-> pure synthesis) when disabled / not fetched."""
+    if samples == "off" or sound_samples is None:
+        return None
+    bank = sound_samples.Bank()
+    if bank.usable:
+        return bank
+    if samples == "on":
+        raise SystemExit("sound.py: --samples on, but the cache is empty; run `npm run init` (tools/samples.py fetch)")
+    return None
+
+
+def _recorded_action(action: str, label: str):
+    """Maps a resolved synth action + label onto a recorded foley key; None keeps the cue silent."""
+    if action in sound_samples.FOLEY:
+        return action
+    if action == "count_tick":
+        return "yawn" if "yawn" in (label or "").lower() else None
+    return None
+
+
+def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 77, samples: str = "auto") -> np.ndarray:
     preset = resolve_preset(preset)
     cfg = PRESETS[preset]
     dur = float(cue_data.get("dur", 6.0))
@@ -1034,7 +1068,20 @@ def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 7
     sig = _derive_topic_signature(cue_data, base_seed=seed)
     rng = np.random.default_rng(sig["seed"])
 
-    stereo = synth_twilight_celesta_bed(dur, scenes, cfg, rng, cues=cues, sig=sig)
+    bank = _load_bank(samples)
+    if bank is not None:
+        n_total = int(round(dur * SR))
+        music = sound_samples.render_music(bank, scenes, dur, np.random.default_rng(sig["seed"] ^ 0x5A17))
+        if music is not None:
+            music = add_studio_tail(music, wet=0.55, rt60=1.1, damp_hz=3200.0)[:n_total]
+            stereo = music * 0.9
+        else:  # no instrument samples fetched: keep the synthesized score
+            stereo = synth_twilight_celesta_bed(dur, scenes, cfg, rng, cues=cues, sig=sig)
+        beds = sound_samples.render_beds(bank, scenes, dur)
+        if beds is not None:
+            stereo = stereo + beds
+    else:
+        stereo = synth_twilight_celesta_bed(dur, scenes, cfg, rng, cues=cues, sig=sig)
 
     room_size = 0.34
     room_wet = 0.14
@@ -1059,10 +1106,23 @@ def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 7
 
         action = _resolve_cue_semantic_action(kind, label)
         if action != "scene_cut":
-            min_gap = 0.65 if action in ("paw_step", "critter_hop", "foot_step") else 0.40
+            min_gap = (0.65 if bank is None else 0.35) if action in ("paw_step", "critter_hop", "foot_step") else 0.40
             if action in last_action_t and (t - last_action_t[action]) < min_gap:
                 continue
             last_action_t[action] = t
+
+        if bank is not None:
+            r_action = _recorded_action(action, label)
+            rec = sound_samples.foley(bank, r_action, intensity, pitch, cue_rng) if r_action else None
+            if rec is not None:
+                rec = add_studio_tail(pan_stereo_haas(rec.mean(axis=1), pan=pan), room_size=0.5, wet=0.2)
+                s0 = max(0, start_sample)
+                length = min(stereo.shape[0] - s0, rec.shape[0])
+                if length > 0:
+                    stereo[s0 : s0 + length] += rec[:length]
+                continue
+            if action in RECORDED_SILENT or r_action is None and action not in FOLEY_ACTIONS:
+                continue  # no recorded material for this cue: stay quiet rather than mix a synth blip into recordings
 
         if action == "scene_cut":
             mono = synth_scene_cut(cfg, intensity, idx, cue_rng)
@@ -1088,7 +1148,7 @@ def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 7
             if length > 0:
                 stereo[s0 : s0 + length] += cue_st[c0 : c0 + length]
 
-    return master_bus(stereo, ceiling_db=-1.2)
+    return master_bus(stereo, ceiling_db=-1.2, lp_hz=RECORDED_LP_HZ if bank is not None else 2600.0)
 
 
 def write_wav(path: Path, stereo: np.ndarray):
@@ -1142,17 +1202,24 @@ def main():
     parser.add_argument("--voice-gain", type=float, default=0.0, help="Voice gain in dB before the final limiter")
     parser.add_argument("--duck-attack", type=float, default=0.02, help="Sidechain attack in seconds")
     parser.add_argument("--duck-release", type=float, default=0.25, help="Sidechain release in seconds")
+    parser.add_argument("--samples", choices=["auto", "on", "off"], default=os.environ.get("STYLEHOP_SAMPLES", "auto"),
+                        help="Recorded CC0 layers from `npm run init`: auto (use if fetched, else synthesize), on (require), off")
+    parser.add_argument("--no-samples", action="store_true", help="Alias for --samples off (pure synthesis)")
     args = parser.parse_args()
+    if args.no_samples:
+        args.samples = "off"
 
     if args.cues:
         cue_path = Path(args.cues)
         cue_data = json.loads(cue_path.read_text(encoding="utf-8"))
+        if os.environ.get("SOUND_DUMP_CUES"):  # dev aid: keep a copy of the cue sheet render.mjs handed us
+            Path(os.environ["SOUND_DUMP_CUES"]).write_text(json.dumps(cue_data, indent=1), encoding="utf-8")
     else:
         cue_data = default_cue_sheet()
 
     preset = resolve_preset(cue_data.get("soundPreset") or args.preset)
 
-    stereo = synthesize_from_cues(cue_data, preset=preset)
+    stereo = synthesize_from_cues(cue_data, preset=preset, samples=args.samples)
     if args.voice:
         voice_path = Path(args.voice)
         if not voice_path.is_file():

@@ -1,0 +1,989 @@
+{
+  "version": 2,
+  "note": "Text only: no audio is committed. `npm run init` (tools/samples.py fetch) downloads everything into ../out/samples-cache/twilight-fable/. CC0-1.0 only.",
+  "sounds": [
+    {
+      "id": "fs-719558",
+      "kind": "bed",
+      "title": "Forest At Night Ambience",
+      "author": "fribergmusic2024",
+      "source": "https://freesound.org/people/fribergmusic2024/sounds/719558/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/719/719558_15600124-hq.ogg",
+      "mirror": null,
+      "sha256": "144418e59c321d30d873d2ffb3b84b83fed3894a03e4124a257e4234fba1dc3d",
+      "tags": [
+        "ambience",
+        "crickets",
+        "forest",
+        "nature",
+        "night",
+        "owl"
+      ],
+      "uses": [
+        "bed.night"
+      ],
+      "window": [
+        2,
+        10
+      ],
+      "gain": 1.0,
+      "lp": 3200
+    },
+    {
+      "id": "fs-819768",
+      "kind": "bed",
+      "title": "Small Brook Flowing Around Rocks",
+      "author": "pepasystem",
+      "source": "https://freesound.org/people/pepasystem/sounds/819768/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/819/819768_4036966-hq.ogg",
+      "mirror": null,
+      "sha256": "c117a39826146498104b681ffe5ea9494716b30ae4c9bcee03ea93f663e5cd9c",
+      "tags": [
+        "ambience",
+        "brook",
+        "flowing",
+        "nature",
+        "outdoor",
+        "relaxation",
+        "river",
+        "rocks"
+      ],
+      "uses": [
+        "bed.stream"
+      ],
+      "window": [
+        10,
+        20
+      ],
+      "gain": 0.8,
+      "lp": 4000,
+      "hp": 120
+    },
+    {
+      "id": "fs-587338",
+      "kind": "bed",
+      "title": "AMBForst_German forest summer evening with birds, suburban, distant traffic.wav",
+      "author": "a-sounds",
+      "source": "https://freesound.org/people/a-sounds/sounds/587338/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/587/587338_13258370-hq.ogg",
+      "mirror": null,
+      "sha256": "5030ed2df6120126c89e9e0bceab1e4cc92f71b134fcac6c16104b26d2c411a5",
+      "tags": [
+        "ambiance",
+        "ambience",
+        "ambient",
+        "atmosphere",
+        "birds",
+        "city",
+        "evening",
+        "field-recording"
+      ],
+      "uses": [
+        "bed.dusk"
+      ],
+      "window": [
+        0,
+        10
+      ],
+      "gain": 1.0,
+      "lp": 4500,
+      "hp": 180
+    },
+    {
+      "id": "fs-512685",
+      "kind": "bed",
+      "title": "Fireplace Crackles",
+      "author": "WavJunction.com",
+      "source": "https://freesound.org/people/WavJunction.com/sounds/512685/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/512/512685_9514571-hq.ogg",
+      "mirror": null,
+      "sha256": "e77de85690fe766370b4fce259bc79de26e840c7277629e52a87fbe3f322e7e3",
+      "tags": [
+        "burn",
+        "crackle",
+        "fire",
+        "fireplace",
+        "flame",
+        "flames",
+        "heat",
+        "stove"
+      ],
+      "uses": [
+        "bed.hearth"
+      ],
+      "window": [
+        2,
+        12
+      ],
+      "gain": 1.0,
+      "lp": 5000,
+      "hp": 60
+    },
+    {
+      "id": "fs-549208",
+      "kind": "bed",
+      "title": "Fireplace.wav",
+      "author": "OwennewO",
+      "source": "https://freesound.org/people/OwennewO/sounds/549208/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/549/549208_11244040-hq.ogg",
+      "mirror": null,
+      "sha256": "be5b9adc3d918b63d09a803953611d9b078a57fbe8f0c8be43a0e6e813d7ef7a",
+      "tags": [
+        "burn",
+        "crackling",
+        "fire",
+        "fireplace"
+      ],
+      "uses": [
+        "bed.hearth"
+      ],
+      "window": [
+        0,
+        10
+      ],
+      "gain": 0.7,
+      "lp": 4500,
+      "hp": 80
+    },
+    {
+      "id": "fs-761024",
+      "kind": "bed",
+      "title": "Very Quiet Indoor Roomtone",
+      "author": "IENBA",
+      "source": "https://freesound.org/people/IENBA/sounds/761024/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/761/761024_9616576-hq.ogg",
+      "mirror": null,
+      "sha256": "9c05d6d61bcf6254a0fe37a00e4c2b6657a82d9294b61c579276d5ea2900336d",
+      "tags": [
+        "ambience",
+        "apartment",
+        "bedroom",
+        "clean",
+        "closet",
+        "fridge",
+        "house",
+        "hum"
+      ],
+      "uses": [
+        "bed.room"
+      ],
+      "window": [
+        3,
+        20
+      ],
+      "gain": 1.0,
+      "lp": 3000
+    },
+    {
+      "id": "fs-611453",
+      "kind": "bed",
+      "title": "Dawn chorus.wav",
+      "author": "Synge101",
+      "source": "https://freesound.org/people/Synge101/sounds/611453/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/611/611453_13531950-hq.ogg",
+      "mirror": null,
+      "sha256": "06e89414a5c5899731f375ca65eabdccf06772ecad2dfb3be68ddf1be4d2d6c2",
+      "tags": [
+        "Birds",
+        "Ireland",
+        "Wicklow",
+        "autumn",
+        "birdsong",
+        "chorus",
+        "countryside",
+        "dawn"
+      ],
+      "uses": [
+        "bed.dawn"
+      ],
+      "window": [
+        5,
+        12
+      ],
+      "gain": 1.0,
+      "lp": 4800,
+      "hp": 250
+    },
+    {
+      "id": "fs-770095",
+      "kind": "oneshot",
+      "title": "Footsteps Moss - Forest, walk, jog & run",
+      "author": "Vrymaa",
+      "source": "https://freesound.org/people/Vrymaa/sounds/770095/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/770/770095_13973196-hq.ogg",
+      "mirror": null,
+      "sha256": "245f95543af36d70413c67e9366f7953e0a5bd3bd39917391ef3372c64d7078c",
+      "tags": [
+        "boots",
+        "crunch",
+        "feet",
+        "fields",
+        "foot",
+        "footstep",
+        "footsteps",
+        "forest"
+      ],
+      "uses": [
+        "foley.paw_step"
+      ],
+      "cuts": [
+        [
+          0.38,
+          0.78
+        ],
+        [
+          0.84,
+          1.24
+        ],
+        [
+          1.28,
+          1.68
+        ]
+      ],
+      "gain": 0.9,
+      "lp": 2600
+    },
+    {
+      "id": "fs-443388",
+      "kind": "oneshot",
+      "title": "footsteps on leaves.wav",
+      "author": "narrative_svad",
+      "source": "https://freesound.org/people/narrative_svad/sounds/443388/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/443/443388_9175632-hq.ogg",
+      "mirror": null,
+      "sha256": "bed0bb50f5b15fe5821c0580fcf21c303854c236fec934c0b9c21073a14718fe",
+      "tags": [
+        "leaves",
+        "narrative",
+        "sound"
+      ],
+      "uses": [
+        "foley.paw_step"
+      ],
+      "cuts": [
+        [
+          0.86,
+          1.26
+        ],
+        [
+          1.45,
+          1.85
+        ]
+      ],
+      "gain": 0.9,
+      "lp": 3200
+    },
+    {
+      "id": "fs-545510",
+      "kind": "oneshot",
+      "title": "Steps - Leaves.wav",
+      "author": "kr-sound",
+      "source": "https://freesound.org/people/kr-sound/sounds/545510/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/545/545510_6885527-hq.ogg",
+      "mirror": null,
+      "sha256": "fbfee536d6ed5b8c1e6dc23932b5e13f59f14e58088ed809b5e0ca6f9f0b2c9d",
+      "tags": [
+        "Field-Recording",
+        "FootSteps",
+        "SpotEffect",
+        "Steps",
+        "VideoGames"
+      ],
+      "uses": [
+        "foley.paw_step"
+      ],
+      "cuts": [
+        [
+          0.0,
+          0.45
+        ],
+        [
+          1.97,
+          2.42
+        ]
+      ],
+      "gain": 0.9,
+      "lp": 3200
+    },
+    {
+      "id": "fs-590947",
+      "kind": "oneshot",
+      "title": "Creaky Door Slow 01",
+      "author": "Rudmer_Rotteveel",
+      "source": "https://freesound.org/people/Rudmer_Rotteveel/sounds/590947/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/590/590947_4921277-hq.ogg",
+      "mirror": null,
+      "sha256": "8d70de652da63dbb88ca597e9786da2049cf2ff124c6256b449df614d889f883",
+      "tags": [
+        "close",
+        "closing",
+        "creak",
+        "creaking",
+        "creaky",
+        "creepy",
+        "door",
+        "doors"
+      ],
+      "uses": [
+        "foley.wood_creak"
+      ],
+      "gain": 0.8,
+      "lp": 3500
+    },
+    {
+      "id": "fs-590950",
+      "kind": "oneshot",
+      "title": "Creaky Door Closing Slowly",
+      "author": "Rudmer_Rotteveel",
+      "source": "https://freesound.org/people/Rudmer_Rotteveel/sounds/590950/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/590/590950_4921277-hq.ogg",
+      "mirror": null,
+      "sha256": "d7b0266670a07c9bf8a40098d88508764eac1c7af7f05320d57066226738dfa3",
+      "tags": [
+        "close",
+        "closing",
+        "creak",
+        "creaking",
+        "creaky",
+        "creepy",
+        "door",
+        "doors"
+      ],
+      "uses": [
+        "foley.wood_creak"
+      ],
+      "gain": 0.8,
+      "lp": 3500
+    },
+    {
+      "id": "fs-830452",
+      "kind": "oneshot",
+      "title": "Door creak",
+      "author": "Ixwolf",
+      "source": "https://freesound.org/people/Ixwolf/sounds/830452/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/830/830452_11912888-hq.ogg",
+      "mirror": null,
+      "sha256": "5626677eaa705caebdb8d7a37ed63db7184e6cf6346ba0d41594ff532b03af8c",
+      "tags": [
+        "creak",
+        "door",
+        "horror",
+        "vintage",
+        "wooden"
+      ],
+      "uses": [
+        "foley.wood_creak"
+      ],
+      "gain": 0.7,
+      "lp": 3200
+    },
+    {
+      "id": "fs-455319",
+      "kind": "oneshot",
+      "title": "Heavy Door Creaking_04.wav",
+      "author": "rambler52",
+      "source": "https://freesound.org/people/rambler52/sounds/455319/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/455/455319_2291385-hq.ogg",
+      "mirror": null,
+      "sha256": "02b6786115d4b98042aa6f8475e04a8399a72c1a4d1c6601519ea1f0273de66a",
+      "tags": [
+        "Creak",
+        "Door",
+        "Groan"
+      ],
+      "uses": [
+        "foley.wood_creak"
+      ],
+      "cuts": [
+        [
+          2.9,
+          4.6
+        ]
+      ],
+      "gain": 0.8,
+      "lp": 3500
+    },
+    {
+      "id": "fs-178907",
+      "kind": "oneshot",
+      "title": "Droplets",
+      "author": "paronamixxe",
+      "source": "https://freesound.org/people/paronamixxe/sounds/178907/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/178/178907_2871983-hq.ogg",
+      "mirror": null,
+      "sha256": "33efac27abb3aa199c462662aab612b0976a44bad6260f2f75fdcde46b121222",
+      "tags": [
+        "3x",
+        "commons",
+        "creative",
+        "droplet",
+        "droplets",
+        "free",
+        "mixing",
+        "osc"
+      ],
+      "uses": [
+        "foley.water_ripple"
+      ],
+      "cuts": [
+        [
+          0.32,
+          0.82
+        ],
+        [
+          1.24,
+          1.74
+        ],
+        [
+          1.59,
+          2.09
+        ]
+      ],
+      "gain": 0.8,
+      "lp": 5000
+    },
+    {
+      "id": "fs-165145",
+      "kind": "oneshot",
+      "title": "Rpeople_Droplet.wav",
+      "author": "rhythmpeople",
+      "source": "https://freesound.org/people/rhythmpeople/sounds/165145/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/165/165145_2997898-hq.ogg",
+      "mirror": null,
+      "sha256": "13859bd2033d34093fba5c7a5c807715a08db49e8fc5c5b42551016c4d46ddbf",
+      "tags": [
+        "edm",
+        "electronic",
+        "sound-effect"
+      ],
+      "uses": [
+        "foley.water_ripple"
+      ],
+      "cuts": [
+        [
+          0.0,
+          1.5
+        ]
+      ],
+      "gain": 0.8,
+      "lp": 5000
+    },
+    {
+      "id": "fs-558850",
+      "kind": "oneshot",
+      "title": "waterdrop.m4a",
+      "author": "DigPro120",
+      "source": "https://freesound.org/people/DigPro120/sounds/558850/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/558/558850_7414526-hq.ogg",
+      "mirror": null,
+      "sha256": "6e7af12d13b2797a4e1b6b03c486bc67cdc6eaa5b8004a1d107e8577ecd9ae7e",
+      "tags": [
+        "drip",
+        "dripping",
+        "drop",
+        "water"
+      ],
+      "uses": [
+        "foley.water_ripple"
+      ],
+      "cuts": [
+        [
+          0.9,
+          1.7
+        ]
+      ],
+      "gain": 0.8,
+      "lp": 5000
+    },
+    {
+      "id": "fs-667173",
+      "kind": "oneshot",
+      "title": "Night Wind Chimes",
+      "author": "itsgabbo",
+      "source": "https://freesound.org/people/itsgabbo/sounds/667173/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/667/667173_458647-hq.ogg",
+      "mirror": null,
+      "sha256": "b25a8b0c82cf337aa53b6c4ee5aef780a5404560d840d9be2ee2b4104ac91e9f",
+      "tags": [
+        "ambience",
+        "crickets",
+        "field-recording",
+        "fieldrecording",
+        "nature",
+        "night",
+        "sounds",
+        "soundscape"
+      ],
+      "uses": [
+        "foley.spirit_shimmer"
+      ],
+      "cuts": [
+        [
+          0.9,
+          2.3
+        ],
+        [
+          2.2,
+          3.6
+        ]
+      ],
+      "gain": 0.8,
+      "lp": 5000
+    },
+    {
+      "id": "fs-494795",
+      "kind": "oneshot",
+      "title": "Jacket/Cloth Rustle 5",
+      "author": "brandondelehoy",
+      "source": "https://freesound.org/people/brandondelehoy/sounds/494795/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/494/494795_4682121-hq.ogg",
+      "mirror": null,
+      "sha256": "038bacd080975efdf9fca586dae5f03d006dd644d77a997b5187afb82320e103",
+      "tags": [
+        "air",
+        "cape",
+        "cloth",
+        "clothes",
+        "coat",
+        "feathers",
+        "flap",
+        "fly"
+      ],
+      "uses": [
+        "foley.rustle"
+      ],
+      "cuts": [
+        [
+          0.0,
+          1.1
+        ]
+      ],
+      "gain": 0.8,
+      "lp": 3200
+    },
+    {
+      "id": "fs-493419",
+      "kind": "oneshot",
+      "title": "Clothes Rustling Movement 1_2",
+      "author": "Joao_Janz",
+      "source": "https://freesound.org/people/Joao_Janz/sounds/493419/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/493/493419_9961300-hq.ogg",
+      "mirror": null,
+      "sha256": "50c35c8b48c6eb9e49a0edb54f075f197da0f1d3d7d5e4dfbaadd4e395b64d76",
+      "tags": [
+        "Acessories",
+        "Belt",
+        "Blanket",
+        "Body",
+        "Buckle",
+        "Cloth",
+        "Clothes",
+        "Clothing"
+      ],
+      "uses": [
+        "foley.rustle"
+      ],
+      "cuts": [
+        [
+          0.08,
+          0.7
+        ],
+        [
+          0.6,
+          1.45
+        ]
+      ],
+      "gain": 0.8,
+      "lp": 3200
+    }
+  ],
+  "instruments": [
+    {
+      "id": "harp",
+      "title": "VCSL Concert Harp (mf)",
+      "author": "Versilian Studios LLC (Sam Gossner)",
+      "source": "https://github.com/sgossner/VCSL",
+      "commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+      "license": "CC0-1.0",
+      "base": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+      "files": [
+        {
+          "id": "harp-A2",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_A2_mf1.wav",
+          "note": "A2",
+          "sha256": "1df9f4d138ca3931fcb458bcdf01304cadf2e5f4eef67bbc17b0e42c0e60fce6"
+        },
+        {
+          "id": "harp-A4",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_A4_mf1.wav",
+          "note": "A4",
+          "sha256": "3665f3975cad4a33f46784aa4f896f4b4319ba2b7831e892d975bc38c9f09f23"
+        },
+        {
+          "id": "harp-A6",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_A6_mf1.wav",
+          "note": "A6",
+          "sha256": "4605355d22fae6f58190bf0d033d2ebdd745d63e2e43204d6f41ad27e4f09af0"
+        },
+        {
+          "id": "harp-B1",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_B1_mf1.wav",
+          "note": "B1",
+          "sha256": "284034807efbb429cb63f6fb744834b18e6281a4914e6460de0a5818b5d0d0e6"
+        },
+        {
+          "id": "harp-B3",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_B3_mf1.wav",
+          "note": "B3",
+          "sha256": "f6f71be8c640822ef48a448b245585659acdfcc7ed5774e10f37be2fc02fcab4"
+        },
+        {
+          "id": "harp-B5",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_B5_mf1.wav",
+          "note": "B5",
+          "sha256": "f2757b674c6b7301bed52e17a1ae3e3d34d628b3f7edc5773ebb25798d2541f7"
+        },
+        {
+          "id": "harp-B6",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_B6_mf1.wav",
+          "note": "B6",
+          "sha256": "720e56b99f84d4ef1b9bc8cd3c217170320f523edb68488af3da76d2217e16f7"
+        },
+        {
+          "id": "harp-C3",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_C3_mf3.wav",
+          "note": "C3",
+          "sha256": "18e6222e8fc11a8106e8d7a875d208835eb5b45598f010b21c786b1482e09869"
+        },
+        {
+          "id": "harp-C5",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_C5_mf1.wav",
+          "note": "C5",
+          "sha256": "7c8b862f6fd3f1442ed87537af976d84bda8c05a5b4900e8907d570b5202a517"
+        },
+        {
+          "id": "harp-D2",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_D2_mf1.wav",
+          "note": "D2",
+          "sha256": "b9cbdc08e43fc0b28ac70246df991cb390f5cbd7f31519b3cc7f70d283b70566"
+        },
+        {
+          "id": "harp-D4",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_D4_mf1.wav",
+          "note": "D4",
+          "sha256": "ebfde8aab4411019e37e3426f4dd88d6a52a38c2d0261d7f10ec63d8ff584dc7"
+        },
+        {
+          "id": "harp-D6",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_D6_mf1.wav",
+          "note": "D6",
+          "sha256": "b040b61fb279efa1a9b9c60dcbd8626a37f57ffb30f3b50747a2123ee4db5bd2"
+        },
+        {
+          "id": "harp-E3",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_E3_mf1.wav",
+          "note": "E3",
+          "sha256": "aafa9d41ec0f77da8f2891055af8b3f9557e0ba1f1df93d53ae6e1fda07afae5"
+        },
+        {
+          "id": "harp-E5",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_E5_mf1.wav",
+          "note": "E5",
+          "sha256": "95dd9ddb0bd15bee7687906e00f25aafcaa43020cc9501f0e8b6cabf0e9a53ec"
+        },
+        {
+          "id": "harp-F2",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_F2_mf1.wav",
+          "note": "F2",
+          "sha256": "d5c0fb42c176af334fd6f6d1b97858556619c51e177efb5b0c6c23bc19ce6dad"
+        },
+        {
+          "id": "harp-F4",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_F4_mf1.wav",
+          "note": "F4",
+          "sha256": "db27ebbb37334c10e06f2ae63f4d9ff555e4d11704fcc6f0bcf503863867e577"
+        },
+        {
+          "id": "harp-F6",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_F6_mf1.wav",
+          "note": "F6",
+          "sha256": "7cf4c012542df737be39900af262fdd980681956e734f43af106718184f34213"
+        },
+        {
+          "id": "harp-G3",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_G3_mf1.wav",
+          "note": "G3",
+          "sha256": "62600eb1b37bc2829ca65351f7ca7e506c9ae472abd5bea0765a8b8fa7df2772"
+        },
+        {
+          "id": "harp-G5",
+          "path": "Chordophones/Composite Chordophones/Concert Harp/KSHarp_G5_mf1.wav",
+          "note": "G5",
+          "sha256": "f2004dfc617997fbabc6f849add2af06f4f859361c44a8fca0f993dc7f999540"
+        }
+      ]
+    },
+    {
+      "id": "glock",
+      "title": "VCSL Glockenspiel (soft)",
+      "author": "Versilian Studios LLC (Sam Gossner)",
+      "source": "https://github.com/sgossner/VCSL",
+      "commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+      "license": "CC0-1.0",
+      "base": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+      "files": [
+        {
+          "id": "glock-C5",
+          "path": "Idiophones/Struck Idiophones/Glockenspiel/glock_soft_C5_02.wav",
+          "note": "C5",
+          "sha256": "4fa149e6f224557df5fab98ad660a8f192bc6fbf2556077dd1089509bf4424e2"
+        },
+        {
+          "id": "glock-C6",
+          "path": "Idiophones/Struck Idiophones/Glockenspiel/glock_soft_C6_01.wav",
+          "note": "C6",
+          "sha256": "e0fdb3a134ee828530c654db7f94b04f94272984938875b0d5535ec40c658324"
+        },
+        {
+          "id": "glock-C7",
+          "path": "Idiophones/Struck Idiophones/Glockenspiel/glock_soft_C7_03.wav",
+          "note": "C7",
+          "sha256": "68d823a0deffef138d4ed583bd027b9932643a630064274e73d67a644385be4c"
+        },
+        {
+          "id": "glock-G4",
+          "path": "Idiophones/Struck Idiophones/Glockenspiel/glock_soft_G4_01.wav",
+          "note": "G4",
+          "sha256": "cd92f9402c28d3e951dc8d575ce61f0a550b7e316cb6427b1b455ac3aab09000"
+        },
+        {
+          "id": "glock-G5",
+          "path": "Idiophones/Struck Idiophones/Glockenspiel/glock_soft_G5_01.wav",
+          "note": "G5",
+          "sha256": "73f6a6de89291d0292b303d641444de5e6e1561881f09f6cf20d77f245f7bec3"
+        },
+        {
+          "id": "glock-G6",
+          "path": "Idiophones/Struck Idiophones/Glockenspiel/glock_soft_G6_01.wav",
+          "note": "G6",
+          "sha256": "b4407b60c2dff43a3a80fe5231beed95caad4d9b8f3f9cdbd80a27642207f35d"
+        }
+      ]
+    },
+    {
+      "id": "kalimba",
+      "title": "VCSL Kalimba, Tanzania (pluck)",
+      "author": "Versilian Studios LLC (Sam Gossner)",
+      "source": "https://github.com/sgossner/VCSL",
+      "commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+      "license": "CC0-1.0",
+      "base": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+      "files": [
+        {
+          "id": "kalimba-As3",
+          "path": "Idiophones/Plucked Idiophones/Kalimba, Tanzania/MBira3_pluck_Main_A#3_k18_50_100_rr2.wav",
+          "note": "A#3",
+          "sha256": "4982936107dca7fbe370c1f78e3a8c2c609e0700938ff4a391fc7ecdf7c3523d"
+        },
+        {
+          "id": "kalimba-As4",
+          "path": "Idiophones/Plucked Idiophones/Kalimba, Tanzania/MBira3_pluck_Main_A#4_k2_50_100_rr2.wav",
+          "note": "A#4",
+          "sha256": "8b536bc1941c6a674c59cb3d6f4a3c0c1581b22df0948fa140165aaa0b8abf49"
+        },
+        {
+          "id": "kalimba-Cs4",
+          "path": "Idiophones/Plucked Idiophones/Kalimba, Tanzania/MBira3_pluck_Main_C#4_k5_50_100_rr2.wav",
+          "note": "C#4",
+          "sha256": "2d2be2152d784f8013ded81ff863f4d0c5775d546bc1d61723d0c04f25426e45"
+        },
+        {
+          "id": "kalimba-Cs5",
+          "path": "Idiophones/Plucked Idiophones/Kalimba, Tanzania/MBira3_pluck_Main_C#5_k24_50_100_rr2.wav",
+          "note": "C#5",
+          "sha256": "81cad929b42f5177bbe5d09da860725d2cf5304d2d0fe32443523ef09e508ef3"
+        },
+        {
+          "id": "kalimba-D4",
+          "path": "Idiophones/Plucked Idiophones/Kalimba, Tanzania/MBira3_pluck_Main_D4_k19_50_100_rr2.wav",
+          "note": "D4",
+          "sha256": "c9b6034cec0ad70c483ac0db87f48f33a5421e2cf594ed590e405a126cfd43c5"
+        },
+        {
+          "id": "kalimba-E5",
+          "path": "Idiophones/Plucked Idiophones/Kalimba, Tanzania/MBira3_pluck_Main_E5_k25_50_100_rr2.wav",
+          "note": "E5",
+          "sha256": "becb36f0ad9f00ffab16f70bed644e40eada202dc839eee29bc7012953ab5bb9"
+        },
+        {
+          "id": "kalimba-Fs5",
+          "path": "Idiophones/Plucked Idiophones/Kalimba, Tanzania/MBira3_pluck_Main_F#5_k1_50_100_rr2.wav",
+          "note": "F#5",
+          "sha256": "9f9a138e1e771db5c9a00f26955ed0b011af47cbe8c5ecf4fb24b82f2bc0e07a"
+        },
+        {
+          "id": "kalimba-Gs5",
+          "path": "Idiophones/Plucked Idiophones/Kalimba, Tanzania/MBira3_pluck_Main_G#5_k26_50_100_rr2.wav",
+          "note": "G#5",
+          "sha256": "f16705ce5ccd540c53a2c2d88ce7c4a20b0c04cea54c003fa3ccbea4c2215f15"
+        },
+        {
+          "id": "kalimba-G4",
+          "path": "Idiophones/Plucked Idiophones/Kalimba, Tanzania/MBira3_pluck_Main_G4_k22_50_100_rr2.wav",
+          "note": "G4",
+          "sha256": "59fef12af5bf667cd7b3d12454e62377ac47f6893de416fc9f6e12f30043495b"
+        }
+      ]
+    },
+    {
+      "id": "pizz",
+      "title": "VSCO-2-CE Cello Section pizzicato",
+      "author": "Versilian Studios LLC (Sam Gossner), Simon Dalzell",
+      "source": "https://github.com/sgossner/VSCO-2-CE",
+      "commit": "440300901dfe9275fd84e0b7763af1f8443ae62e",
+      "license": "CC0-1.0",
+      "base": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e",
+      "files": [
+        {
+          "id": "pizz-A2",
+          "path": "Strings/Cello Section/pizzT/pizzT_A2_v1_RR1.wav",
+          "note": "A2",
+          "sha256": "3ef328e9c07e58797bb65831edef89b1fc946013a736826b6e380776c91b1f83"
+        },
+        {
+          "id": "pizz-B1",
+          "path": "Strings/Cello Section/pizzT/pizzT_B1_v1_RR1.wav",
+          "note": "B1",
+          "sha256": "33bbfc9664e8536e8931fba5c53ab4e06abeb6f75fc3b6186bcdb159d6000604"
+        },
+        {
+          "id": "pizz-B3",
+          "path": "Strings/Cello Section/pizzT/pizzT_B3_v1_RR1.wav",
+          "note": "B3",
+          "sha256": "ded9d0b8a7651e21883c937fc4cce2199f0d973ca683fac5d61582093b0f00fa"
+        },
+        {
+          "id": "pizz-C1",
+          "path": "Strings/Cello Section/pizzT/pizzT_C1_v1_RR1.wav",
+          "note": "C1",
+          "sha256": "9032689650e38cb7a967616d15f3434bd52865637200e785bf89c3a1a88b29ce"
+        },
+        {
+          "id": "pizz-C3",
+          "path": "Strings/Cello Section/pizzT/pizzT_C3_v1_RR1.wav",
+          "note": "C3",
+          "sha256": "63353870ad00cebe9882b96abcceae12480d37b78b62ded6228fb638871e8a81"
+        },
+        {
+          "id": "pizz-D2",
+          "path": "Strings/Cello Section/pizzT/pizzT_D2_v1_RR1.wav",
+          "note": "D2",
+          "sha256": "434925e6b7d154cfa7c17e89ccc8e4a126e01a970cabee22fe09a9fb0e462bb6"
+        },
+        {
+          "id": "pizz-D4",
+          "path": "Strings/Cello Section/pizzT/pizzT_D4_v1_RR1.wav",
+          "note": "D4",
+          "sha256": "e1950b741b2aca0a3f2f71b41bb3d5ddefe33a1d93f24a11b3962a64a0bbef06"
+        },
+        {
+          "id": "pizz-E1",
+          "path": "Strings/Cello Section/pizzT/pizzT_E1_v1_RR1.wav",
+          "note": "E1",
+          "sha256": "9fed783345f57619ccc7ac1eff282c4e5ec6ff30b7b935ee96da204efb6b6c59"
+        },
+        {
+          "id": "pizz-E3",
+          "path": "Strings/Cello Section/pizzT/pizzT_E3_v1_RR1.wav",
+          "note": "E3",
+          "sha256": "f0ef78c07d2468a5f762aae1bb23806e0439f5372d872b68fa8967943808f1da"
+        },
+        {
+          "id": "pizz-F2",
+          "path": "Strings/Cello Section/pizzT/pizzT_F2_v1_RR1.wav",
+          "note": "F2",
+          "sha256": "ff44e135372083b7c7989fc741c2ebc97bf91f11c5ba7d3c99bcf2c967f6c4e8"
+        },
+        {
+          "id": "pizz-F4",
+          "path": "Strings/Cello Section/pizzT/pizzT_F4_v1_RR1.wav",
+          "note": "F4",
+          "sha256": "0bb67ae171aa7f8a5a1caa6072ec9b5a858622881ad4efc42fb609d7f6015505"
+        },
+        {
+          "id": "pizz-G1",
+          "path": "Strings/Cello Section/pizzT/pizzT_G1_v1_RR1.wav",
+          "note": "G1",
+          "sha256": "4bfeddd80e7dd07d71f627d16b7458231c6b14118b8b8b3fe039ba8b73d88236"
+        },
+        {
+          "id": "pizz-G3",
+          "path": "Strings/Cello Section/pizzT/pizzT_G3_v1_RR1.wav",
+          "note": "G3",
+          "sha256": "e97f815fbeea50ad5dab06ac6f6f435e7df8981556a38a9a69194900ff2c2b5b"
+        }
+      ]
+    },
+    {
+      "id": "flute",
+      "title": "VSCO-2-CE Flute (expressive vibrato)",
+      "author": "Versilian Studios LLC (Sam Gossner), Simon Dalzell",
+      "source": "https://github.com/sgossner/VSCO-2-CE",
+      "commit": "440300901dfe9275fd84e0b7763af1f8443ae62e",
+      "license": "CC0-1.0",
+      "base": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e",
+      "files": [
+        {
+          "id": "flute-A4",
+          "path": "Woodwinds/Flute/expvib/LDFlute_expvib_A4_v1_1.wav",
+          "note": "A4",
+          "sha256": "25f416f625f0acbf427c377f67bba01e68c514d4ea980557bc2884812f7c57f2"
+        },
+        {
+          "id": "flute-C4",
+          "path": "Woodwinds/Flute/expvib/LDFlute_expvib_C4_v1_1.wav",
+          "note": "C4",
+          "sha256": "af29be391cd3de946c8ff263a05f349a3c85e7298deed183339004a2ab1cad26"
+        },
+        {
+          "id": "flute-C5",
+          "path": "Woodwinds/Flute/expvib/LDFlute_expvib_C5_v1_1.wav",
+          "note": "C5",
+          "sha256": "7f85ac8b21270bacf48d37e39b0c59ad25b3710bf270150940a948369f30028a"
+        },
+        {
+          "id": "flute-E4",
+          "path": "Woodwinds/Flute/expvib/LDFlute_expvib_E4_v1_1.wav",
+          "note": "E4",
+          "sha256": "76ddf8704b6725b0f601fd70394503a5f2dd767881a0a70e6fd90315d3d96757"
+        },
+        {
+          "id": "flute-E5",
+          "path": "Woodwinds/Flute/expvib/LDFlute_expvib_E5_v1_1.wav",
+          "note": "E5",
+          "sha256": "98bb4ad4eb81f1d73ccc794622e8045ec618eccf331d71f95520b6e51c379189"
+        }
+      ]
+    }
+  ]
+}
