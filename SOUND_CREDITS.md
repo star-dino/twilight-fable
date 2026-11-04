@@ -30,6 +30,10 @@ No audio is committed to the repository: `npm run init` downloads the files into
 | fs-667173 | itsgabbo | Night Wind Chimes | foley.spirit_shimmer | https://freesound.org/people/itsgabbo/sounds/667173/ |
 | fs-494795 | brandondelehoy | Jacket/Cloth Rustle 5 | foley.rustle | https://freesound.org/people/brandondelehoy/sounds/494795/ |
 | fs-493419 | Joao_Janz | Clothes Rustling Movement 1_2 | foley.rustle | https://freesound.org/people/Joao_Janz/sounds/493419/ |
+| fs-573191 | TRP | Waves gentle med cu lake water TTP 24-96 180618.wav | bed.lake | https://freesound.org/people/TRP/sounds/573191/ |
+| fs-591364 | Fisharefast | Frog Pond Tasmania.wav | bed.frogs | https://freesound.org/people/Fisharefast/sounds/591364/ |
+| fs-843069 | ReflektWave | A light breeze, the rustle of reeds. The rustle of dry grass | bed.reeds | https://freesound.org/people/ReflektWave/sounds/843069/ |
+| fs-352721 | joseph.larralde | wind_gusts_soft.wav | bed.wind | https://freesound.org/people/joseph.larralde/sounds/352721/ |
 
 ## Instrument samples (CC0 1.0)
 

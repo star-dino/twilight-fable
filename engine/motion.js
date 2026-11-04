@@ -496,6 +496,10 @@ export function extractCues(root) {
       settle: s.settle,
       keyframe: s.keyframe,
       mood: s.el?.dataset?.mood || null,
+      // Per-scene sound declarations (tools/sound.py): data-bed="lake,frogs:-8" (bed groups, optional dB), data-reveal="2.1:9"
+      // (local second [: swell dB]) -- a short moment where the environment swells to become the subject, then recedes.
+      bed: s.el?.dataset?.bed || null,
+      reveal: s.el?.dataset?.reveal || null,
       look: s.el?.dataset?.look || null,
       silence: s.el?.dataset?.silence || null,
     })),

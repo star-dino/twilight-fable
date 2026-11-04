@@ -1057,7 +1057,49 @@ def _recorded_action(action: str, label: str):
     return None
 
 
-def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 77, samples: str = "auto") -> np.ndarray:
+MUSIC_GAIN = 0.62  # recorded score bus (was 0.9): music supports the character, it does not carpet the scene
+
+
+def _db(x: float) -> float:
+    return round(20.0 * np.log10(max(1e-9, float(x))), 2)
+
+
+def _rms_db(x: np.ndarray) -> float:
+    return _db(np.sqrt(np.mean(x**2))) if x is not None and len(x) else -99.0
+
+
+def _mix_report(mot, music, beds, fx, scenes, cues, dur, hits) -> dict:
+    """Objective numbers for the recorded mix (pre-master dBFS): per-layer RMS, bed level over time, around each reveal."""
+    ev = sound_samples.reveal_events(scenes, cues)
+    out = {"layers_rms_dbfs": {"music": _rms_db(music), "beds": _rms_db(beds), "foley": _rms_db(fx)},
+           "layers_peak_dbfs": {"music": _db(np.max(np.abs(music))), "beds": _db(np.max(np.abs(beds))) if beds is not None else None,
+                                "foley": _db(np.max(np.abs(fx)))},
+           "reveals": [{"t": round(t, 3), "swell_db": db} for t, db in ev], "scenes": []}
+    for sc in scenes:
+        a, b = int(sc["start"] * SR), int(min(dur, sc["end"]) * SR)
+        out["scenes"].append({"id": sc.get("id"), "bed": sc.get("bed"), "mood": sc.get("mood"),
+                              "music": _rms_db(music[a:b]), "beds": _rms_db(beds[a:b]) if beds is not None else None, "foley": _rms_db(fx[a:b])})
+    def win(arr, t0, t1):
+        return _rms_db(arr[int(max(0, t0) * SR) : int(min(dur, t1) * SR)]) if arr is not None else None
+    if ev:
+        T = ev[0][0]
+        e_lead, e_att, e_hold, e_rel = (sound_samples.REVEAL_LEAD, sound_samples.REVEAL_ATTACK, sound_samples.REVEAL_HOLD, sound_samples.REVEAL_RELEASE)
+        peak0 = T - e_lead + e_att
+        out["around_reveal"] = {
+            "before_rms_dbfs": win(beds, T - 1.6, T - 0.4), "at_rms_dbfs": win(beds, peak0, peak0 + e_hold),
+            "after_rms_dbfs": win(beds, min(peak0 + e_hold + e_rel + 0.2, dur - 0.7), min(peak0 + e_hold + e_rel + 1.4, dur - 0.1)),
+            "music_before": win(music, T - 1.6, T - 0.4), "music_at": win(music, peak0, peak0 + e_hold),
+            "foley_before": win(fx, T - 1.6, T - 0.4), "foley_at": win(fx, peak0, peak0 + e_hold)}
+    k = max(1, int(CTRL_RATE_REPORT))
+    out["bed_gain_db_curve"] = [[round(float(t), 3), round(float(v), 2)] for t, v in zip(mot["t"][::k], mot["bed_db"][::k])]
+    out["bed_rms_over_time"] = [[round(t0, 2), win(beds, t0, t0 + 0.5)] for t0 in np.arange(0, dur - 0.25, 0.25)]
+    return out
+
+
+CTRL_RATE_REPORT = 20
+
+
+def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 77, samples: str = "auto", report: dict | None = None) -> np.ndarray:
     preset = resolve_preset(preset)
     cfg = PRESETS[preset]
     dur = float(cue_data.get("dur", 6.0))
@@ -1069,17 +1111,19 @@ def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 7
     rng = np.random.default_rng(sig["seed"])
 
     bank = _load_bank(samples)
+    beds = None
+    fx = None  # recorded foley bus (kept apart so the beds can duck under it)
+    foley_hits = []
     if bank is not None:
         n_total = int(round(dur * SR))
         music = sound_samples.render_music(bank, scenes, dur, np.random.default_rng(sig["seed"] ^ 0x5A17))
         if music is not None:
             music = add_studio_tail(music, wet=0.55, rt60=1.1, damp_hz=3200.0)[:n_total]
-            stereo = music * 0.9
+            stereo = music * MUSIC_GAIN
         else:  # no instrument samples fetched: keep the synthesized score
             stereo = synth_twilight_celesta_bed(dur, scenes, cfg, rng, cues=cues, sig=sig)
         beds = sound_samples.render_beds(bank, scenes, dur)
-        if beds is not None:
-            stereo = stereo + beds
+        fx = np.zeros_like(stereo)
     else:
         stereo = synth_twilight_celesta_bed(dur, scenes, cfg, rng, cues=cues, sig=sig)
 
@@ -1094,6 +1138,8 @@ def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 7
         intensity = float(cue.get("intensity", 0.75))
         pitch = float(cue.get("pitch", 1.0))
         start_sample = int(round(t * SR))
+        if kind == "reveal":  # control cue only (bed swell); never a sound of its own
+            continue
 
         # Per-event deterministic RNG seeded by CRC32 so every cue instance has organic micro-variation
         cue_crc = zlib.crc32(f"{preset}:{idx}:{kind}:{label}:{int(round(t * 1000))}".encode("utf-8")) & 0xFFFFFFFF
@@ -1119,7 +1165,8 @@ def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 7
                 s0 = max(0, start_sample)
                 length = min(stereo.shape[0] - s0, rec.shape[0])
                 if length > 0:
-                    stereo[s0 : s0 + length] += rec[:length]
+                    fx[s0 : s0 + length] += rec[:length]
+                    foley_hits.append((t, intensity))
                 continue
             if action in RECORDED_SILENT or r_action is None and action not in FOLEY_ACTIONS:
                 continue  # no recorded material for this cue: stay quiet rather than mix a synth blip into recordings
@@ -1148,6 +1195,16 @@ def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 7
             if length > 0:
                 stereo[s0 : s0 + length] += cue_st[c0 : c0 + length]
 
+    if bank is not None:
+        # Recorded mix: music + (beds with reveal swell / foley duck) + foley. Beds stay low under the character.
+        mot = sound_samples.mix_motion(scenes, cues, dur, foley_hits)
+        music_part = sound_samples.apply_db(stereo, mot["t"], mot["music_db"])
+        bed_part = sound_samples.apply_db(beds, mot["t"], mot["bed_db"]) if beds is not None else None
+        if report is not None:
+            report.update(_mix_report(mot, music_part, bed_part, fx, scenes, cues, dur, foley_hits))
+        stereo = music_part + fx
+        if bed_part is not None:
+            stereo = stereo + bed_part
     return master_bus(stereo, ceiling_db=-1.2, lp_hz=RECORDED_LP_HZ if bank is not None else 2600.0)
 
 
@@ -1204,6 +1261,7 @@ def main():
     parser.add_argument("--duck-release", type=float, default=0.25, help="Sidechain release in seconds")
     parser.add_argument("--samples", choices=["auto", "on", "off"], default=os.environ.get("STYLEHOP_SAMPLES", "auto"),
                         help="Recorded CC0 layers from `npm run init`: auto (use if fetched, else synthesize), on (require), off")
+    parser.add_argument("--report", default=None, help="Write per-layer RMS / bed-envelope numbers (recorded mix) to this JSON")
     parser.add_argument("--no-samples", action="store_true", help="Alias for --samples off (pure synthesis)")
     args = parser.parse_args()
     if args.no_samples:
@@ -1219,7 +1277,10 @@ def main():
 
     preset = resolve_preset(cue_data.get("soundPreset") or args.preset)
 
-    stereo = synthesize_from_cues(cue_data, preset=preset, samples=args.samples)
+    report = {} if args.report else None
+    stereo = synthesize_from_cues(cue_data, preset=preset, samples=args.samples, report=report)
+    if args.report:
+        Path(args.report).write_text(json.dumps(report, indent=1), encoding="utf-8")
     if args.voice:
         voice_path = Path(args.voice)
         if not voice_path.is_file():

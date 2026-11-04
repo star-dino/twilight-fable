@@ -30,3 +30,4 @@
 
 - **kernel 与 world**：可复用的材质、地形/水/室内生成与生灵在 `styles/twilight-fable/kernel.js`；一个具体故事在 `styles/twilight-fable/world.js`（或经 `?world=` / `--world` 传入的外部模块）。
 - **`extractCues(root)`**：解析每个 `.frame.scene` 上的 `data-cues`（以及 `[data-enter]` / `[data-draw]` / `[data-count]` / `[data-layer]`）成 `window.CUES`，由 `tools/sound.py` 消费；`critter2d` 在运行时通过 `registerRuntimeCue` 追加 `paw_step` / `critter_hop`。
+- **场景声音声明**（录音底，`tools/sound.py`；不写则按场景序号走默认）：`data-bed="lake,frogs:-8"`（环境床组，可带 dB）、`data-mood="lake-night|mirror|play|stars|night|door|hearth|dawn"`（配乐动机）、`data-reveal="<本地秒>[:<dB>]"`（揭示：环境床短暂抬起成为主体后回落；也可用 `kind=reveal` 的 cue）。环境床默认很低，让角色的拟音/配乐领先；床在拟音瞬间会轻微闪避。

@@ -615,6 +615,113 @@
       ],
       "gain": 0.8,
       "lp": 3200
+    },
+    {
+      "id": "fs-573191",
+      "kind": "bed",
+      "title": "Waves gentle med cu lake water TTP 24-96 180618.wav",
+      "author": "TRP",
+      "source": "https://freesound.org/people/TRP/sounds/573191/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/573/573191_97550-hq.ogg",
+      "mirror": null,
+      "sha256": "551f1cb2bb929544f5ae7f7e5b86a8029f008707882bdf21f10e6794d34b985d",
+      "tags": [
+        "gentle",
+        "lake",
+        "waves"
+      ],
+      "uses": [
+        "bed.lake"
+      ],
+      "window": [
+        10,
+        40
+      ],
+      "gain": 1.0,
+      "lp": 3200,
+      "hp": 80
+    },
+    {
+      "id": "fs-591364",
+      "kind": "bed",
+      "title": "Frog Pond Tasmania.wav",
+      "author": "Fisharefast",
+      "source": "https://freesound.org/people/Fisharefast/sounds/591364/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/591/591364_3504602-hq.ogg",
+      "mirror": null,
+      "sha256": "2e5ed1a5646bea119d3690a754cd8981ee13d1bceaff72558a86718b17e77586",
+      "tags": [
+        "ambience",
+        "frogs",
+        "nature",
+        "night",
+        "pond"
+      ],
+      "uses": [
+        "bed.frogs"
+      ],
+      "window": [
+        10,
+        40
+      ],
+      "gain": 1.0,
+      "lp": 4200,
+      "hp": 200
+    },
+    {
+      "id": "fs-843069",
+      "kind": "bed",
+      "title": "A light breeze, the rustle of reeds. The rustle of dry grass",
+      "author": "ReflektWave",
+      "source": "https://freesound.org/people/ReflektWave/sounds/843069/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/843/843069_17814297-hq.ogg",
+      "mirror": null,
+      "sha256": "643adbb785b8f6601e969c56ac08fa75e3bd1a3818802d593c09630480c9c309",
+      "tags": [
+        "breeze",
+        "reeds",
+        "rustle",
+        "wind"
+      ],
+      "uses": [
+        "bed.reeds"
+      ],
+      "window": [
+        2,
+        35
+      ],
+      "gain": 1.0,
+      "lp": 5000,
+      "hp": 250
+    },
+    {
+      "id": "fs-352721",
+      "kind": "bed",
+      "title": "wind_gusts_soft.wav",
+      "author": "joseph.larralde",
+      "source": "https://freesound.org/people/joseph.larralde/sounds/352721/",
+      "license": "CC0-1.0",
+      "url": "https://cdn.freesound.org/previews/352/352721_269279-hq.ogg",
+      "mirror": null,
+      "sha256": "64d403b9845d4a09030fb99b219afb3639b1862146f4cc59dd6cc8e75e6cbc31",
+      "tags": [
+        "wind",
+        "gusts",
+        "field-recording"
+      ],
+      "uses": [
+        "bed.wind"
+      ],
+      "window": [
+        5,
+        40
+      ],
+      "gain": 1.0,
+      "lp": 1800,
+      "hp": 60
     }
   ],
   "instruments": [
