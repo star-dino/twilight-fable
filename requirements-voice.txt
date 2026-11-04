@@ -1,7 +1,7 @@
 # Optional voice tier for `tools/voice.py`.
 # Frame rendering and `tools/sound.py` without `--voice` do not need these packages.
 #
-# Recommended GPU environment (Python 3.11-3.12, e.g. `/root/tts/voice312`):
+# Recommended GPU environment (Python 3.11-3.12, e.g. `~/tts/voice312`):
 #   uv pip install -r requirements-voice.txt
 #
 # ============================================================================

@@ -564,9 +564,11 @@ def compute_vocal_metrics(audio: np.ndarray) -> dict:
 # 2. TTS PROVIDERS, LICENSE REGISTRY & RAW LINE CACHING
 # =============================================================================
 
-VOICE312_PY = Path(os.environ.get("VOICE_GPU_PYTHON", "/root/tts/voice312/bin/python"))
-CHATTTS_PY = Path(os.environ.get("CHATTTS_PYTHON", "/root/tts/venv/bin/python"))
-DEFAULT_POET_REF_WAV = Path(os.environ.get("VOICE_DEFAULT_REF_WAV", "/root/tts/refs/poet_baritone_ref.wav"))
+# Optional GPU voice stack lives under $TTS_HOME (default ~/tts); every path below can be overridden by its own env var.
+TTS_HOME = Path(os.environ.get("TTS_HOME") or (Path.home() / "tts"))
+VOICE312_PY = Path(os.environ.get("VOICE_GPU_PYTHON") or (TTS_HOME / "voice312" / "bin" / "python"))
+CHATTTS_PY = Path(os.environ.get("CHATTTS_PYTHON") or (TTS_HOME / "venv" / "bin" / "python"))
+DEFAULT_POET_REF_WAV = Path(os.environ.get("VOICE_DEFAULT_REF_WAV") or (TTS_HOME / "refs" / "poet_baritone_ref.wav"))
 DEFAULT_POET_REF_TEXT = os.environ.get("VOICE_DEFAULT_REF_TEXT", "国破，山河在。")
 
 # Named Kokoro-82M-v1.1-zh speaker blend presets (Apache-2.0)
@@ -736,7 +738,7 @@ def kokoro_zh_synth(text: str, voice: str, speed: float) -> np.ndarray:
     global _KOKORO_ZH_PIPE
     if importlib.util.find_spec("kokoro") is None:
         if not VOICE312_PY.is_file():
-            die("kokoro>=0.9 is not installed and /root/tts/voice312/bin/python was not found")
+            die("kokoro>=0.9 is not installed and the GPU voice python ($VOICE_GPU_PYTHON or ~/tts/voice312/bin/python) was not found")
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
             tmp_wav = Path(tf.name)
         try:
@@ -800,7 +802,7 @@ def f5_synth(
 ) -> np.ndarray:
     """
     Zero-shot Flow-Matching synthesis via `SWivid/F5-TTS` (`F5TTS_v1_Base`, CC-BY-NC-4.0 weights).
-    Clones the timbre and cadence of `ref_audio` (defaults to `/root/tts/refs/poet_baritone_ref.wav`).
+    Clones the timbre and cadence of `ref_audio` (defaults to `~/tts/refs/poet_baritone_ref.wav`).
     """
     global _F5_ENGINE
     ref_wav_path = Path(ref_audio).resolve() if ref_audio else DEFAULT_POET_REF_WAV
@@ -810,7 +812,7 @@ def f5_synth(
 
     if importlib.util.find_spec("f5_tts") is None:
         if not VOICE312_PY.is_file():
-            die("f5-tts is not installed and /root/tts/voice312/bin/python was not found")
+            die("f5-tts is not installed and the GPU voice python ($VOICE_GPU_PYTHON or ~/tts/voice312/bin/python) was not found")
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
             tmp_wav = Path(tf.name)
         try:
@@ -868,7 +870,7 @@ def f5_synth(
 
 
 def indextts2_available() -> bool:
-    return Path("/root/tts/index-tts/checkpoints/gpt.pth").is_file() and VOICE312_PY.is_file()
+    return (TTS_HOME / "index-tts" / "checkpoints" / "gpt.pth").is_file() and VOICE312_PY.is_file()
 
 
 def indextts2_synth(
@@ -882,12 +884,12 @@ def indextts2_synth(
     """
     Synthesizes speech via local IndexTTS-2.
     - When `profile` is `recite` / `classical_poem` (or `emo_audio` is explicitly provided), uses
-      disentangled `emo_audio_prompt` (defaulting to `/root/tts/refs/poet_master_emo_tragic.wav` for poetry).
+      disentangled `emo_audio_prompt` (defaulting to `~/tts/refs/poet_master_emo_tragic.wav` for poetry).
     - When `profile` is `narrator` / `story` / `monologue` (e.g., explaining a topic),
       does NOT inject the tragic poetry emotion prompt unless `emo_audio` or `emo_text` is explicitly given,
       ensuring calm, natural narrative prosody without poetic dragging.
     """
-    spk_wav = Path(ref_audio).resolve() if ref_audio else Path("/root/tts/refs/poet_master_spk.wav")
+    spk_wav = Path(ref_audio).resolve() if ref_audio else (TTS_HOME / "refs" / "poet_master_spk.wav")
     if not spk_wav.is_file():
         spk_wav = DEFAULT_POET_REF_WAV
 
@@ -896,7 +898,7 @@ def indextts2_synth(
         emo_wav_path = Path(emo_audio).resolve()
         emo_arg = str(emo_wav_path) if emo_wav_path.is_file() else ""
     elif is_poetic and not emo_text:
-        default_emo = Path("/root/tts/refs/poet_master_emo_tragic.wav")
+        default_emo = (TTS_HOME / "refs" / "poet_master_emo_tragic.wav")
         emo_arg = str(default_emo) if default_emo.is_file() else ""
     else:
         emo_arg = ""
@@ -911,8 +913,8 @@ def indextts2_synth(
             "    return torch.from_numpy(d.T.copy()), sr\n"
             "torchaudio.load = _sf_load\n"
             "from indextts.infer_v2 import IndexTTS2\n"
-            "tts = IndexTTS2(cfg_path='/root/tts/index-tts/checkpoints/config.yaml', "
-            "model_dir='/root/tts/index-tts/checkpoints', use_fp16=True, device='cuda:0', use_cuda_kernel=False)\n"
+            f"tts = IndexTTS2(cfg_path={str(TTS_HOME / 'index-tts' / 'checkpoints' / 'config.yaml')!r}, "
+            f"model_dir={str(TTS_HOME / 'index-tts' / 'checkpoints')!r}, use_fp16=True, device='cuda:0', use_cuda_kernel=False)\n"
             "emo_wav = sys.argv[3] if sys.argv[3] else None\n"
             "emo_txt = sys.argv[4] if sys.argv[4] else None\n"
             "tts.infer(spk_audio_prompt=sys.argv[1], text=sys.argv[2], output_path=sys.argv[6], "
@@ -920,7 +922,7 @@ def indextts2_synth(
             "emo_alpha=float(sys.argv[5]), interval_silence=350 if emo_wav else 220)\n"
         )
         env = os.environ.copy()
-        env["PYTHONPATH"] = f"/root/tts/index-tts:{env.get('PYTHONPATH', '')}"
+        env["PYTHONPATH"] = f"{TTS_HOME / 'index-tts'}:{env.get('PYTHONPATH', '')}"
         proc = subprocess.run(
             [str(VOICE312_PY), "-c", code, str(spk_wav), text, emo_arg, str(emo_text or ""), str(float(emo_alpha)), str(tmp_wav)],
             capture_output=True,
@@ -937,7 +939,7 @@ def indextts2_synth(
 
 
 def chattts_synth(text: str, voice_seed: str = "42") -> np.ndarray:
-    """Synthesizes conversational speech via `2Noise/ChatTTS` (CC-BY-NC-4.0 weights) in `/root/tts/venv`."""
+    """Synthesizes conversational speech via `2Noise/ChatTTS` (CC-BY-NC-4.0 weights) in `~/tts/venv`."""
     py_bin = CHATTTS_PY if CHATTTS_PY.is_file() else Path(sys.executable)
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
         tmp_wav = Path(tf.name)
