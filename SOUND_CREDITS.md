@@ -6,7 +6,7 @@ no NC/ND/BY terms apply, and the videos may be monetised. This list is generated
 
 No audio is committed to the repository: `npm run init` downloads the files into `../out/samples-cache/twilight-fable/`.
 
-## Freesound recordings (CC0 1.0)
+## Ambient & foley recordings (CC0 1.0)
 
 | id | author | title | used for | source |
 | --- | --- | --- | --- | --- |
@@ -17,28 +17,30 @@ No audio is committed to the repository: `npm run init` downloads the files into
 | fs-549208 | OwennewO | Fireplace.wav | bed.hearth | https://freesound.org/people/OwennewO/sounds/549208/ |
 | fs-761024 | IENBA | Very Quiet Indoor Roomtone | bed.room | https://freesound.org/people/IENBA/sounds/761024/ |
 | fs-611453 | Synge101 | Dawn chorus.wav | bed.dawn | https://freesound.org/people/Synge101/sounds/611453/ |
-| fs-770095 | Vrymaa | Footsteps Moss - Forest, walk, jog & run | foley.paw_step | https://freesound.org/people/Vrymaa/sounds/770095/ |
-| fs-443388 | narrative_svad | footsteps on leaves.wav | foley.paw_step | https://freesound.org/people/narrative_svad/sounds/443388/ |
-| fs-545510 | kr-sound | Steps - Leaves.wav | foley.paw_step | https://freesound.org/people/kr-sound/sounds/545510/ |
-| fs-590947 | Rudmer_Rotteveel | Creaky Door Slow 01 | foley.wood_creak | https://freesound.org/people/Rudmer_Rotteveel/sounds/590947/ |
-| fs-590950 | Rudmer_Rotteveel | Creaky Door Closing Slowly | foley.wood_creak | https://freesound.org/people/Rudmer_Rotteveel/sounds/590950/ |
-| fs-830452 | Ixwolf | Door creak | foley.wood_creak | https://freesound.org/people/Ixwolf/sounds/830452/ |
-| fs-455319 | rambler52 | Heavy Door Creaking_04.wav | foley.wood_creak | https://freesound.org/people/rambler52/sounds/455319/ |
-| fs-178907 | paronamixxe | Droplets | foley.water_ripple | https://freesound.org/people/paronamixxe/sounds/178907/ |
-| fs-165145 | rhythmpeople | Rpeople_Droplet.wav | foley.water_ripple | https://freesound.org/people/rhythmpeople/sounds/165145/ |
-| fs-558850 | DigPro120 | waterdrop.m4a | foley.water_ripple | https://freesound.org/people/DigPro120/sounds/558850/ |
-| fs-667173 | itsgabbo | Night Wind Chimes | foley.spirit_shimmer | https://freesound.org/people/itsgabbo/sounds/667173/ |
-| fs-494795 | brandondelehoy | Jacket/Cloth Rustle 5 | foley.rustle | https://freesound.org/people/brandondelehoy/sounds/494795/ |
-| fs-493419 | Joao_Janz | Clothes Rustling Movement 1_2 | foley.rustle | https://freesound.org/people/Joao_Janz/sounds/493419/ |
-| fs-573191 | TRP | Waves gentle med cu lake water TTP 24-96 180618.wav | bed.lake | https://freesound.org/people/TRP/sounds/573191/ |
-| fs-591364 | Fisharefast | Frog Pond Tasmania.wav | bed.frogs | https://freesound.org/people/Fisharefast/sounds/591364/ |
-| fs-843069 | ReflektWave | A light breeze, the rustle of reeds. The rustle of dry grass | bed.reeds | https://freesound.org/people/ReflektWave/sounds/843069/ |
-| fs-352721 | joseph.larralde | wind_gusts_soft.wav | bed.wind | https://freesound.org/people/joseph.larralde/sounds/352721/ |
+| fs-528067 | laughatlantic | Water lapping on lake Pukaki, South Island, New Zealand | bed.lake | https://freesound.org/people/laughatlantic/sounds/528067/ |
+| fs-734642 | Vrymaa | Night crickets | bed.frogs | https://freesound.org/people/Vrymaa/sounds/734642/ |
+| fs-570306 | yaanick | night-frogs2.wav | bed.frogs | https://freesound.org/people/yaanick/sounds/570306/ |
+| fs-615441 | InChristAlone | Burning Bush (gentle night breeze) | bed.reeds, bed.wind | https://freesound.org/people/InChristAlone/sounds/615441/ |
+| fs-166325 | deleted_user_2104797 | Water_drop_9.wav | foley.water_ripple | https://freesound.org/people/deleted_user_2104797/sounds/166325/ |
+| fs-68330 | sandome | w_c_oo_10.wav | foley.water_ripple | https://freesound.org/people/sandome/sounds/68330/ |
+| fs-683102 | florianreichelt | water drop | foley.water_ripple | https://freesound.org/people/florianreichelt/sounds/683102/ |
+| vcsl-paw-s1 | Versilian Studios LLC (Sam Gossner) | Frame Drum Small Muted Finger Pad rr1 | foley.paw_step | https://github.com/sgossner/VCSL |
+| vcsl-paw-s2 | Versilian Studios LLC (Sam Gossner) | Frame Drum Small Muted Finger Pad rr2 | foley.paw_step | https://github.com/sgossner/VCSL |
+| vcsl-paw-l1 | Versilian Studios LLC (Sam Gossner) | Frame Drum Large Muted Finger Pad rr1 | foley.paw_step | https://github.com/sgossner/VCSL |
+| vcsl-shimmer-asc | Versilian Studios LLC (Sam Gossner) | Mark Tree Slow Ascending Shimmer | foley.spirit_shimmer | https://github.com/sgossner/VCSL |
+| vcsl-shimmer-desc | Versilian Studios LLC (Sam Gossner) | Mark Tree Slow Descending Shimmer | foley.spirit_shimmer | https://github.com/sgossner/VCSL |
+| vcsl-bell-d5 | Versilian Studios LLC (Sam Gossner) | Bell Tree Individual D5 | foley.spirit_shimmer | https://github.com/sgossner/VCSL |
+| vcsl-bell-e5 | Versilian Studios LLC (Sam Gossner) | Bell Tree Individual E5 | foley.spirit_shimmer | https://github.com/sgossner/VCSL |
+| vcsl-wood-lo1 | Versilian Studios LLC (Sam Gossner) | Slit Drum Low Medium Mallet v1 rr1 | foley.wood_creak | https://github.com/sgossner/VCSL |
+| vcsl-wood-lo2 | Versilian Studios LLC (Sam Gossner) | Slit Drum Low Medium Mallet v2 rr1 | foley.wood_creak | https://github.com/sgossner/VCSL |
+| vcsl-wood-latch | Versilian Studios LLC (Sam Gossner) | Woodblock Pianissimo Latch Click rr1 | foley.wood_latch | https://github.com/sgossner/VCSL |
 
 ## Instrument samples (CC0 1.0)
 
 - **VCSL Concert Harp (mf)** (19 files, `harp`): Versilian Studios LLC (Sam Gossner) -- https://github.com/sgossner/VCSL @ `c1ea7bcc3c`
+- **VCSL Upright Piano, Knight (pianissimo vl1)** (17 files, `piano`): Versilian Studios LLC (Sam Gossner) -- https://github.com/sgossner/VCSL @ `c1ea7bcc3c`
+- **VCSL Vibraphone (Soft Mallets, v1)** (9 files, `vibes`): Versilian Studios LLC (Sam Gossner) -- https://github.com/sgossner/VCSL @ `c1ea7bcc3c`
 - **VCSL Glockenspiel (soft)** (6 files, `glock`): Versilian Studios LLC (Sam Gossner) -- https://github.com/sgossner/VCSL @ `c1ea7bcc3c`
-- **VCSL Kalimba, Tanzania (pluck)** (9 files, `kalimba`): Versilian Studios LLC (Sam Gossner) -- https://github.com/sgossner/VCSL @ `c1ea7bcc3c`
+- **VSCO-2-CE Cello Section (susvib, v1)** (9 files, `cello`): Versilian Studios LLC (Sam Gossner), Simon Dalzell -- https://github.com/sgossner/VSCO-2-CE @ `440300901d`
 - **VSCO-2-CE Cello Section pizzicato** (13 files, `pizz`): Versilian Studios LLC (Sam Gossner), Simon Dalzell -- https://github.com/sgossner/VSCO-2-CE @ `440300901d`
-- **VSCO-2-CE Flute (expressive vibrato)** (5 files, `flute`): Versilian Studios LLC (Sam Gossner), Simon Dalzell -- https://github.com/sgossner/VSCO-2-CE @ `440300901d`
+- **VSCO-2-CE Flute (non-vibrato sustain, v1)** (6 files, `flute`): Versilian Studios LLC (Sam Gossner), Simon Dalzell -- https://github.com/sgossner/VSCO-2-CE @ `440300901d`

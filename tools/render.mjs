@@ -21,7 +21,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execFileSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import { launchHtmlCanvasBrowser, createHtmlCanvasPage } from '../engine/browser.mjs';
 import { startStaticServer } from '../engine/server.mjs';
 
@@ -388,24 +388,28 @@ export async function main(argv = process.argv.slice(2)) {
         })
       );
 
-      // Collect any runtime acting/foley cues emitted into `window.CUES.cues` across all worker pages
-      const rawCollected = [...(cues?.cues || [])];
+      // Collect any runtime acting/foley cues emitted into `window.CUES.cues` across all worker pages.
+      // Seed authored DOM cues first so runtime auto-cues yield to hand-authored timing within minGap.
+      const authored = [...(cues?.cues || [])].sort((a, b) => a.t - b.t);
+      const runtimeRaw = [];
       for (const wp of pages) {
         const pageCues = await wp.evaluate(() => window.CUES?.cues || []);
-        for (const c of pageCues) rawCollected.push(c);
+        for (const c of pageCues) runtimeRaw.push(c);
       }
-      rawCollected.sort((a, b) => a.t - b.t);
+      runtimeRaw.sort((a, b) => a.t - b.t);
       const locomotionKinds = new Set(['paw_step', 'foot_step', 'critter_hop']);
       const domKinds = new Set(['scene_cut', 'card_enter', 'stroke_draw', 'count_tick', 'layer_float']);
       const allCollectedCues = [];
-      for (const c of rawCollected) {
+      for (const c of [...authored, ...runtimeRaw]) {
+        const isLoco = locomotionKinds.has(c.kind);
         const cId = `${c.kind}:${c.label || c.kind}`;
-        const minGap = locomotionKinds.has(c.kind) ? 0.65 : domKinds.has(c.kind) ? 0.08 : 0.42;
+        const minGap = isLoco ? 0.42 : domKinds.has(c.kind) ? 0.08 : 0.42;
         const dup = allCollectedCues.some(
-          (p) => `${p.kind}:${p.label || p.kind}` === cId && Math.abs(p.t - c.t) < minGap
+          (p) => (isLoco ? p.kind === c.kind : `${p.kind}:${p.label || p.kind}` === cId) && Math.abs(p.t - c.t) < minGap
         );
         if (!dup) allCollectedCues.push(c);
       }
+      allCollectedCues.sort((a, b) => a.t - b.t);
       if (cues) cues.cues = allCollectedCues;
       await page.evaluate((merged) => {
         if (window.CUES) window.CUES.cues = merged;
@@ -463,6 +467,24 @@ export async function main(argv = process.argv.slice(2)) {
       if (wavPath && fs.existsSync(wavPath)) {
         const targetI = voiceWav ? -16 : -19;
         const targetTp = voiceWav ? -1.2 : -1.5;
+        let loudnormAf = `loudnorm=I=${targetI}:TP=${targetTp}:LRA=20`;
+        try {
+          const probe = spawnSync(
+            'ffmpeg',
+            ['-hide_banner', '-nostats', '-i', wavPath, '-af', `${loudnormAf}:print_format=json`, '-f', 'null', '-'],
+            { encoding: 'utf8' }
+          );
+          const m = (probe.stderr || '').match(/\{\s*"input_i"[\s\S]*?\}/);
+          if (m) {
+            const st = JSON.parse(m[0]);
+            if (Number.isFinite(+st.input_i) && Number.isFinite(+st.input_tp)) {
+              loudnormAf =
+                `${loudnormAf}:measured_I=${st.input_i}:measured_TP=${st.input_tp}` +
+                `:measured_LRA=${st.input_lra}:measured_thresh=${st.input_thresh}` +
+                `:offset=${st.target_offset}:linear=true`;
+            }
+          }
+        } catch {}
         ffArgs.push(
           '-i',
           wavPath,
@@ -475,7 +497,7 @@ export async function main(argv = process.argv.slice(2)) {
           '-pix_fmt',
           'yuv420p',
           '-af',
-          `loudnorm=I=${targetI}:TP=${targetTp}:LRA=20`,
+          loudnormAf,
           '-c:a',
           'aac',
           '-b:a',

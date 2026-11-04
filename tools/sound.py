@@ -896,18 +896,25 @@ def master_bus(stereo: np.ndarray, ceiling_db: float = -1.2, lp_hz: float = 2600
         active_rms = np.sqrt(np.mean(out ** 2) + 1e-12)
 
     # Preserve wide crest factor for a gentle score while keeping healthy loudness
-    target_rms = 0.095
-    max_gain = 1.8
-    gain = float(np.clip(target_rms / active_rms, 0.55, max_gain))
+    target_rms = 0.088
+    max_gain = 3.6
+    gain = float(np.clip(target_rms / active_rms, 0.50, max_gain))
     out = out * gain
 
-    # True-peak ceiling at ceiling_db (-1.2 dBTP)
+    # Transparent soft-knee true-peak limiting so stray superposition peaks never pull down the whole mix
     ceiling = 10.0 ** (ceiling_db / 20.0)
+    knee = ceiling * 0.72
+    mag = np.abs(out)
+    over = mag > knee
+    if np.any(over):
+        sign = np.sign(out[over])
+        excess = (mag[over] - knee) / max(ceiling - knee, 1e-6)
+        out[over] = sign * (knee + (ceiling - knee) * np.tanh(excess))
     peak = float(np.max(np.abs(out)))
     if peak > ceiling:
         out *= ceiling / peak
-    elif peak > 1e-5:
-        out *= min(1.22, ceiling / peak)
+    elif peak > 1e-5 and gain < max_gain:
+        out *= min(1.12, ceiling / peak)
 
     # Gentle 40ms fade-in and 120ms fade-out
     n = out.shape[0]
@@ -1033,7 +1040,7 @@ def mix_voice_into(
 
 # Recorded-mode cue routing (kind/label -> recorded foley action, or None to stay silent).
 RECORDED_SILENT = {"scene_cut", "card_enter", "count_tick"}
-RECORDED_LP_HZ = 6500.0
+RECORDED_LP_HZ = 9200.0
 
 
 def _load_bank(samples: str):
@@ -1050,14 +1057,14 @@ def _load_bank(samples: str):
 
 def _recorded_action(action: str, label: str):
     """Maps a resolved synth action + label onto a recorded foley key; None keeps the cue silent."""
-    if action in sound_samples.FOLEY:
+    if action in sound_samples.FOLEY or action in sound_samples.FOLEY_GRACE:
         return action
     if action == "count_tick":
         return "yawn" if "yawn" in (label or "").lower() else None
     return None
 
 
-MUSIC_GAIN = 0.62  # recorded score bus (was 0.9): music supports the character, it does not carpet the scene
+MUSIC_GAIN = 0.78  # recorded score bus: warm chamber presence balanced with beds and character foley
 
 
 def _db(x: float) -> float:
@@ -1118,7 +1125,7 @@ def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 7
         n_total = int(round(dur * SR))
         music = sound_samples.render_music(bank, scenes, dur, np.random.default_rng(sig["seed"] ^ 0x5A17))
         if music is not None:
-            music = add_studio_tail(music, wet=0.55, rt60=1.1, damp_hz=3200.0)[:n_total]
+            music = add_studio_tail(music, wet=0.38, rt60=1.05, damp_hz=3600.0)[:n_total]
             stereo = music * MUSIC_GAIN
         else:  # no instrument samples fetched: keep the synthesized score
             stereo = synth_twilight_celesta_bed(dur, scenes, cfg, rng, cues=cues, sig=sig)
@@ -1152,7 +1159,7 @@ def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 7
 
         action = _resolve_cue_semantic_action(kind, label)
         if action != "scene_cut":
-            min_gap = (0.65 if bank is None else 0.35) if action in ("paw_step", "critter_hop", "foot_step") else 0.40
+            min_gap = (0.65 if bank is None else 0.38) if action in ("paw_step", "critter_hop", "foot_step") else (0.40 if bank is None else 0.38)
             if action in last_action_t and (t - last_action_t[action]) < min_gap:
                 continue
             last_action_t[action] = t
@@ -1161,7 +1168,7 @@ def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 7
             r_action = _recorded_action(action, label)
             rec = sound_samples.foley(bank, r_action, intensity, pitch, cue_rng) if r_action else None
             if rec is not None:
-                rec = add_studio_tail(pan_stereo_haas(rec.mean(axis=1), pan=pan), room_size=0.5, wet=0.2)
+                rec = add_studio_tail(sound_samples.pan_stereo(rec, pan * 0.65), room_size=0.38, wet=0.16)
                 s0 = max(0, start_sample)
                 length = min(stereo.shape[0] - s0, rec.shape[0])
                 if length > 0:
@@ -1205,7 +1212,7 @@ def synthesize_from_cues(cue_data: dict, preset: str = "twilight", seed: int = 7
         stereo = music_part + fx
         if bed_part is not None:
             stereo = stereo + bed_part
-    return master_bus(stereo, ceiling_db=-1.2, lp_hz=RECORDED_LP_HZ if bank is not None else 2600.0)
+    return master_bus(stereo, ceiling_db=-1.8 if bank is not None else -1.2, lp_hz=RECORDED_LP_HZ if bank is not None else 2600.0)
 
 
 def write_wav(path: Path, stereo: np.ndarray):

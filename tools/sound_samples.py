@@ -4,9 +4,10 @@
 (CC0 recordings only) and provides three deterministic, numpy-only layers:
 
   * `render_beds`   -- per-scene ambience beds, equal-power crossfaded at scene cuts
-  * `render_music`  -- a small note sampler (nearest sampled pitch, resample-shift, velocity layer,
-                       release tail) driven by a short per-scene score (night -> dawn)
-  * `foley`         -- round-robin recorded foley one-shots with small pitch/gain jitter
+  * `render_music`  -- a multi-instrument note sampler (pianissimo upright piano, concert harp,
+                       soft-mallet vibraphone, bowed/pizzicato cello, non-vibrato flute, soft glock)
+                       driven by cohesive per-scene harmonic motifs
+  * `foley`         -- clean studio & field CC0 foley one-shots with gentle musical halos
 
 If the cache (or a whole group) is missing, every function returns None and the caller falls back to
 the synthesized layer, so a fresh clone still renders.
@@ -109,9 +110,9 @@ def shift(x: np.ndarray, semitones: float) -> np.ndarray:
 
 def filt(x: np.ndarray, lp: float | None = None, hp: float | None = None) -> np.ndarray:
     if hp:
-        x = signal.sosfilt(signal.butter(2, hp / (0.5 * SR), "high", output="sos"), x, axis=0)
+        x = signal.sosfilt(signal.butter(2, np.clip(hp / (0.5 * SR), 0.001, 0.95), "high", output="sos"), x, axis=0)
     if lp:
-        x = signal.sosfilt(signal.butter(2, lp / (0.5 * SR), "low", output="sos"), x, axis=0)
+        x = signal.sosfilt(signal.butter(2, np.clip(lp / (0.5 * SR), 0.002, 0.96), "low", output="sos"), x, axis=0)
     return x
 
 
@@ -138,10 +139,13 @@ def add(buf: np.ndarray, at: float, x: np.ndarray, gain: float = 1.0) -> None:
 
 
 def pan_stereo(x: np.ndarray, pan: float) -> np.ndarray:
-    """Collapse to mono and place with an equal-power law."""
-    m = x.mean(axis=1) if x.ndim == 2 else x
+    """Place stereo/mono signal with an equal-power law while preserving subtle stereo air."""
     ang = (float(np.clip(pan, -1, 1)) + 1.0) * (np.pi / 4.0)
-    return np.stack([m * np.cos(ang), m * np.sin(ang)], axis=1)
+    if x.ndim == 2:
+        mid = 0.5 * (x[:, 0] + x[:, 1])
+        side = 0.35 * (x[:, 0] - x[:, 1])
+        return np.stack([mid * np.cos(ang) + side, mid * np.sin(ang) - side], axis=1)
+    return np.stack([x * np.cos(ang), x * np.sin(ang)], axis=1)
 
 
 # --------------------------------------------------------------------------------------------------
@@ -150,13 +154,13 @@ def pan_stereo(x: np.ndarray, pan: float) -> np.ndarray:
 
 # scene index -> [(group, level in dB)] ; night -> dusk -> hearth -> dawn
 BEDS = {
-    0: [("bed.night", 0.0), ("bed.stream", -7.0)],
-    1: [("bed.dusk", 0.0), ("bed.night", -12.0)],
+    0: [("bed.night", 0.0), ("bed.stream", -8.0)],
+    1: [("bed.dusk", 0.0), ("bed.night", -10.0)],
     2: [("bed.hearth", 0.0), ("bed.room", -4.0)],
     3: [("bed.dawn", 0.0), ("bed.dusk", -10.0)],
 }
-BED_LEVEL_DB = -13.0  # beds are normalised to -24 dBFS RMS; this is the low base under the character (foley/music lead); a reveal swells it
-XFADE = 0.7
+BED_LEVEL_DB = -9.5   # beds are normalised to -24 dBFS RMS; stays gently audible beneath character & score until a reveal
+XFADE = 0.85
 BED_STACK_DB = -7.0  # a declared bed list without explicit dB: first group at 0, each further group this much lower
 
 
@@ -165,7 +169,7 @@ def parse_beds(spec) -> list | None:
     if not spec or not isinstance(spec, str):
         return None
     out = []
-    for i, tok in enumerate(t.strip() for t in spec.split(",")):
+    for tok in (t.strip() for t in spec.split(",")):
         if not tok:
             continue
         name, _, db = tok.partition(":")
@@ -187,8 +191,8 @@ def _bed_layer(bank: Bank, group: str, n: int) -> np.ndarray | None:
     out = np.zeros((n, 2))
     for row in rows:
         a = bank.audio(row)
-        if len(a) < n:  # loop with a short equal-power seam
-            seam = min(len(a) // 4, int(0.5 * SR))
+        if len(a) < n:  # loop with a smooth equal-power seam
+            seam = min(len(a) // 4, int(0.8 * SR))
             reps = [a]
             while sum(len(r) for r in reps) - seam * (len(reps) - 1) < n:
                 prev = reps[-1]
@@ -199,7 +203,7 @@ def _bed_layer(bank: Bank, group: str, n: int) -> np.ndarray | None:
             a = np.concatenate(reps)
         seg = filt(a[:n], row.get("lp"), row.get("hp"))
         out += seg * float(row.get("gain", 1.0))
-    return out
+    return out / max(1.0, np.sqrt(len(rows)))
 
 
 def render_beds(bank: Bank, scenes: list, dur: float, level_db: float | None = None) -> np.ndarray | None:
@@ -222,8 +226,8 @@ def render_beds(bank: Bank, scenes: list, dur: float, level_db: float | None = N
         if n <= 0:
             continue
         env = np.ones(n)
-        fi = int(XFADE * SR) if pos > 0 else int(0.04 * SR)
-        fo = int(XFADE * SR) if pos < len(scenes) - 1 else int(0.12 * SR)
+        fi = int(XFADE * SR) if pos > 0 else int(0.18 * SR)
+        fo = int(XFADE * SR) if pos < len(scenes) - 1 else int(0.45 * SR)
         fi, fo = min(fi, n // 2), min(fo, n // 2)
         env[:fi] = np.sin(np.linspace(0, np.pi / 2, fi))
         env[n - fo :] *= np.cos(np.linspace(0, np.pi / 2, fo))
@@ -240,13 +244,25 @@ def render_beds(bank: Bank, scenes: list, dur: float, level_db: float | None = N
 # music: sampler + score
 # --------------------------------------------------------------------------------------------------
 
-# base gain, default hold (s), release (s), attack fade (s)
+# (base gain, default hold s, release s, attack fade s, base_lp Hz, vel_lp Hz)
 INSTRUMENTS = {
-    "harp": (0.62, 2.2, 0.55, 0.002),
-    "glock": (0.50, 1.4, 0.45, 0.002),
-    "kalimba": (0.62, 1.6, 0.40, 0.002),
-    "pizz": (0.85, 0.7, 0.20, 0.002),
-    "flute": (0.42, 1.8, 0.45, 0.10),
+    "piano": (0.50, 2.3, 0.90, 0.008, 1700.0, 2400.0),
+    "harp":  (0.44, 2.4, 0.85, 0.005, 2000.0, 2800.0),
+    "vibes": (0.38, 2.1, 0.85, 0.006, 1850.0, 2500.0),
+    "cello": (0.34, 3.0, 1.15, 0.380,  720.0,  720.0),
+    "pizz":  (0.38, 0.75, 0.32, 0.004, 980.0, 1300.0),
+    "flute": (0.30, 2.0, 0.80, 0.220, 1850.0, 2000.0),
+    "glock": (0.20, 1.4, 0.60, 0.005, 2100.0, 2200.0),
+}
+
+INST_SPREAD = {
+    "piano": -0.06,
+    "harp":   0.08,
+    "vibes":  0.14,
+    "cello": -0.18,
+    "pizz":  -0.14,
+    "flute":  0.04,
+    "glock":  0.18,
 }
 
 
@@ -254,85 +270,102 @@ def sample_note(bank: Bank, inst: str, midi: float, hold: float | None, vel: flo
     rows = bank.groups.get(f"inst.{inst}")
     if not rows:
         return None
-    base, def_hold, rel, att = INSTRUMENTS[inst]
+    base, def_hold, rel, att, lp0, lp_vel = INSTRUMENTS[inst]
     best = min(rows, key=lambda r: (abs(note_to_midi(r["note"]) - midi), note_to_midi(r["note"]) > midi))
     src = note_to_midi(best["note"])
     x = bank.audio(best)
     x = shift(x, midi - src)
     hold = def_hold if hold is None else hold
     n = min(len(x), int((hold + rel) * SR))
+    if n < 32:
+        return None
     x = x[:n].copy()
-    r = min(n // 2, int(rel * SR))
+    r = min(max(2, int(0.65 * n)), int(rel * SR))
     if r > 1:
         x[-r:] *= (0.5 + 0.5 * np.cos(np.linspace(0, np.pi, r)))[:, None]
     x = fade(x, att, 0.0)
     vel = float(np.clip(vel, 0.05, 1.0))
-    x = filt(x, lp=2400.0 + 5200.0 * vel)  # softer = darker, like a real touch
-    return x * (base * vel**1.25 * (1.0 + 0.06 * (rng.random() - 0.5)))
+    hp = 45.0 if inst in ("cello", "pizz", "piano", "harp") else 180.0
+    x = filt(x, lp=lp0 + lp_vel * vel, hp=hp)
+    return x * (base * (vel ** 1.18) * (1.0 + 0.04 * (rng.random() - 0.5)))
 
 
-# Per-scene motif. (beat, midi, velocity[, hold in beats]).  Night (A minor, unresolved question) ->
-# door (F, wonder; flute enters as the door opens) -> hearth (C, warm roll as the lamp rises) ->
-# dawn (C, the night's rising question is answered on the sunrise).
+# Default 4-scene arc ("The Warm Window" & undeclared scenes): Am9 -> Fmaj7 -> Cmaj9 -> Cmaj9 (night -> dawn)
 SCORE = {
-    0: dict(bpm=58, pan=-0.1,
-            pizz=[(0, 45, .62), (2, 52, .5)],
-            harp=[(0.5, 57, .34), (1.0, 60, .36), (1.5, 64, .38)],
-            glock=[(1.5, 76, .34), (2.25, 79, .30)]),
-    1: dict(bpm=72, pan=0.0,
-            pizz=[(0, 41, .62), (2, 48, .52), (4, 53, .45)],
-            harp=[(0.5 + 0.5 * i, m, .34 + 0.03 * i) for i, m in enumerate([53, 57, 60, 65, 69, 72])],
-            kalimba=[(2.0, 69, .46), (2.5, 72, .42), (3.5, 67, .38), (4.25, 65, .34)],
-            flute=[(2.2, 69, .40, 2.6)]),
-    2: dict(bpm=66, pan=0.1,
-            pizz=[(0, 48, .60), (2, 43, .52), (3.5, 48, .44)],
-            harp=[(0.55 + 0.12 * i, m, .40) for i, m in enumerate([48, 55, 60, 64, 67])] + [(2.0, 64, .36), (2.5, 67, .36), (3.0, 72, .34)],
-            flute=[(0.9, 64, .40, 1.6), (2.6, 67, .38, 1.3)],
-            glock=[(3.2, 84, .26)]),
-    3: dict(bpm=76, pan=0.0,
-            pizz=[(0, 48, .56), (2, 55, .46)],
-            harp=[(0.4 * i, m, .42) for i, m in enumerate([60, 64, 67, 72, 76, 79])],
-            flute=[(0.3, 67, .38, 3.4)],
-            glock=[(1.3, 76, .38), (2.0, 79, .38), (2.9, 84, .46)]),
+    0: dict(
+        bpm=58, pan=-0.05,
+        cello=[(0.05, 45, 0.48, 2.6)],
+        pizz=[(0.0, 45, 0.46), (2.0, 52, 0.38)],
+        piano=[(0.0, 57, 0.44), (1.0, 60, 0.42), (2.0, 64, 0.44)],
+        harp=[(0.5, 60, 0.38), (1.5, 64, 0.40), (2.4, 67, 0.38)],
+        vibes=[(1.5, 71, 0.36)],
+    ),
+    1: dict(
+        bpm=68, pan=0.0,
+        cello=[(0.05, 41, 0.50, 3.2)],
+        pizz=[(0.0, 41, 0.46), (2.5, 48, 0.40)],
+        piano=[(0.0, 53, 0.44), (1.2, 57, 0.42), (2.4, 60, 0.46), (3.6, 64, 0.44)],
+        harp=[(0.6, 57, 0.38), (1.8, 60, 0.40), (2.9, 65, 0.42), (3.8, 69, 0.40)],
+        flute=[(2.1, 69, 0.44, 2.0)],
+    ),
+    2: dict(
+        bpm=64, pan=0.05,
+        cello=[(0.05, 48, 0.52, 2.8)],
+        piano=[(0.0, 48, 0.46), (1.0, 55, 0.44), (2.0, 60, 0.46), (2.9, 64, 0.44)],
+        harp=[(0.4, 55, 0.40), (1.4, 60, 0.42), (2.3, 64, 0.42), (3.1, 67, 0.40)],
+        flute=[(0.8, 64, 0.44, 1.8)],
+        vibes=[(1.7, 72, 0.38)],
+    ),
+    3: dict(
+        bpm=64, pan=0.0,
+        cello=[(0.05, 48, 0.50, 2.6)],
+        harp=[(0.14 * i, m, 0.40) for i, m in enumerate([48, 55, 60, 64, 67, 72])],
+        flute=[(0.35, 67, 0.44, 2.0)],
+        piano=[(1.2, 64, 0.42), (2.0, 60, 0.44)],
+        vibes=[(1.9, 72, 0.40)],
+    ),
 }
 
-
-# Named motifs a film can pick per scene with data-mood="<id>"; the four legacy motifs keep their index defaults.
 MOODS = {"night": SCORE[0], "door": SCORE[1], "hearth": SCORE[2], "dawn": SCORE[3]}
 
-# Sparse motifs for night-lake films (already thin: `sparse` skips the legacy thinning). `chime` = (beat, gain) wind-chime
-# accents from the recorded foley.spirit_shimmer group.
+# Cohesive nocturnal lake suite (Dadd9 -> Bm9/Gmaj9 -> Gadd9/Asus4 -> Dmaj9):
+# warm low cello foundation + intimate pianissimo piano & harp + round soft-mallet vibraphone & gentle flute.
 MOODS.update({
-    "lake-night": dict(sparse=True, bpm=54, pan=-0.1,
-                       pizz=[(0, 38, .58), (3, 45, .46)],
-                       harp=[(1.0, 57, .38), (2.0, 62, .34)],
-                       glock=[(2.5, 81, .30)]),
-    "mirror": dict(sparse=True, bpm=60, pan=0.0,
-                   pizz=[(0, 45, .48)],
-                   flute=[(0.6, 69, .38, 3.0)],
-                   glock=[(2.0, 88, .32), (3.0, 93, .30)]),
-    "play": dict(sparse=True, bpm=84, pan=0.1,
-                 pizz=[(0, 43, .52), (1, 50, .42), (2.5, 43, .46)],
-                 kalimba=[(0.5, 62, .40), (1.0, 66, .38), (2.5, 69, .40), (3.25, 74, .38)],
-                 harp=[(1.5, 57, .32)]),
-    "stars": dict(sparse=True, bpm=52, pan=0.0,
-                  pizz=[(0, 50, .46)],
-                  harp=[(0.5, 62, .38), (1.5, 66, .34), (2.5, 69, .34), (3.5, 74, .36)],
-                  flute=[(1.0, 74, .36, 3.0)],
-                  glock=[(3.0, 86, .34)],
-                  chime=[(2.0, 0.5), (4.0, 0.35)]),
+    "lake-night": dict(
+        bpm=60, pan=-0.06,
+        cello=[(0.05, 38, 0.50, 3.3)],
+        pizz=[(0.0, 38, 0.44), (2.5, 45, 0.38)],
+        piano=[(0.0, 50, 0.46), (1.1, 57, 0.42), (2.1, 64, 0.44), (3.1, 66, 0.46)],
+        harp=[(0.55, 57, 0.38), (1.6, 62, 0.40), (2.6, 66, 0.42), (3.65, 69, 0.40)],
+        vibes=[(1.85, 74, 0.38), (3.25, 69, 0.42)],
+    ),
+    "mirror": dict(
+        bpm=60, pan=0.0,
+        cello=[(0.05, 47, 0.48, 2.0), (2.35, 43, 0.52, 2.1)],
+        piano=[(0.0, 54, 0.42), (1.15, 59, 0.42), (2.35, 55, 0.46), (3.4, 62, 0.45)],
+        harp=[(0.55, 57, 0.38), (1.65, 62, 0.40), (2.65, 66, 0.44), (3.20, 69, 0.46), (3.85, 74, 0.42)],
+        flute=[(0.75, 66, 0.42, 1.5), (2.70, 69, 0.46, 1.5)],
+        vibes=[(2.65, 74, 0.40), (3.20, 78, 0.44)],
+    ),
+    "play": dict(
+        bpm=76, pan=0.05,
+        cello=[(0.08, 43, 0.46, 2.2), (2.9, 45, 0.48, 2.1)],
+        pizz=[(0.0, 43, 0.46), (1.5, 50, 0.40), (2.9, 45, 0.44), (4.4, 52, 0.38)],
+        harp=[(0.0, 55, 0.42), (0.65, 59, 0.40), (1.3, 62, 0.44), (2.6, 66, 0.48), (3.4, 69, 0.46), (4.5, 64, 0.42)],
+        piano=[(0.65, 62, 0.42), (2.6, 67, 0.46), (3.9, 69, 0.44), (4.9, 73, 0.42)],
+        vibes=[(1.85, 71, 0.38), (3.6, 74, 0.42), (4.5, 76, 0.42)],
+    ),
+    "stars": dict(
+        bpm=56, pan=0.0,
+        cello=[(0.05, 38, 0.54, 3.5), (0.20, 45, 0.40, 3.3)],
+        harp=[(0.15 * i, m, 0.40 + 0.015 * i) for i, m in enumerate([50, 57, 62, 66, 69, 73, 74])] + [(2.25, 69, 0.38), (3.05, 66, 0.36)],
+        flute=[(0.45, 69, 0.45, 2.2)],
+        piano=[(1.35, 66, 0.44), (2.25, 64, 0.42), (3.05, 62, 0.46)],
+        vibes=[(1.30, 74, 0.42), (3.05, 69, 0.40)],
+    ),
 })
 
-MUSIC_VEL = 0.72  # global touch: gentler than the original score
-
-
-def _thin(events: list, inst: str) -> list:
-    """Sparser legacy scores: every other note of a run, so the harp/kalimba stops being a constant wash."""
-    if inst in ("harp", "kalimba") and len(events) > 3:
-        return events[::2]
-    if inst == "glock" and len(events) > 2:
-        return events[::2]
-    return events
+MUSIC_VEL = 0.88
 
 
 def score_for(sc: dict, pos: int) -> dict:
@@ -346,54 +379,45 @@ def score_for(sc: dict, pos: int) -> dict:
 def render_music(bank: Bank, scenes: list, dur: float, rng: np.random.Generator) -> np.ndarray | None:
     if not any(bank.has(f"inst.{i}") for i in INSTRUMENTS):
         return None
-    out = np.zeros((int(round(dur * SR)), 2))
+    n_total = int(round(dur * SR))
+    out = np.zeros((n_total, 2))
     scenes = scenes or [{"index": 0, "start": 0.0, "end": dur}]
     for pos, sc in enumerate(scenes):
         spec = score_for(sc, pos)
         s0, s1 = float(sc.get("start", 0.0)), float(sc.get("end", dur))
         beat = 60.0 / spec["bpm"]
         for inst in INSTRUMENTS:
-            evs = spec.get(inst, [])
-            if not spec.get("sparse"):
-                evs = _thin(evs, inst)
-            for ev in evs:
+            for ev in spec.get(inst, []):
                 b, midi, vel = ev[0], ev[1], ev[2] * MUSIC_VEL
                 t = s0 + b * beat
-                if t >= s1 - 0.05 or t >= dur - 0.05:
+                if t >= s1 - 0.06 or t >= dur - 0.12:
                     continue
                 hold = ev[3] * beat if len(ev) > 3 else None
                 x = sample_note(bank, inst, midi, hold, vel, rng)
                 if x is None:
                     continue
-                spread = {"harp": 0.0, "pizz": -0.15, "glock": 0.2, "kalimba": 0.15, "flute": -0.05}[inst]
-                add(out, t, pan_stereo(x, spec["pan"] + spread + 0.08 * (rng.random() - 0.5)))
-        for b, g in spec.get("chime", []):
-            t = s0 + b * beat
-            row = bank.pick("foley.spirit_shimmer", rng)
-            if row is None or t >= s1 - 0.05 or t >= dur - 0.05:
-                continue
-            x = filt(bank.audio(row), row.get("lp"), row.get("hp"))
-            add(out, t, pan_stereo(fade(x, 0.003, 0.3), 0.3), 0.30 * g * float(row.get("gain", 1.0)))
-    return out
+                spread = INST_SPREAD.get(inst, 0.0)
+                add(out, t, pan_stereo(x, spec["pan"] + spread + 0.05 * (rng.random() - 0.5)))
+    return fade(out, 0.03, 0.55)
 
 
 # --------------------------------------------------------------------------------------------------
 # mix motion: reveal swell + foley sidechain (control-rate dB curves)
 # --------------------------------------------------------------------------------------------------
 
-REVEAL_DB = 9.0        # default swell above the low base
+REVEAL_DB = 8.0        # default swell above the low base
 REVEAL_LEAD = 0.3      # swell starts this much before the marked moment
 REVEAL_ATTACK = 0.9
 REVEAL_HOLD = 1.3
 REVEAL_RELEASE = 2.0
-MUSIC_REVEAL_DUCK_DB = -2.5
-FOLEY_DUCK_DB = 3.0    # beds dip this much (at intensity 1) under a foley transient
-FOLEY_DUCK = (0.03, 0.12, 0.45)  # attack, hold, release (s)
+MUSIC_REVEAL_DUCK_DB = -1.5
+FOLEY_DUCK_DB = 1.5    # subtle dip under foley transients without choppy pumping
+FOLEY_DUCK = (0.04, 0.08, 0.38)  # attack, hold, release (s)
 CTRL_RATE = 200
 
 
 def reveal_events(scenes: list, cues: list) -> list:
-    """[(absolute t, swell dB)] from scene `reveal="t_local[:dB]"` and cues of kind `reveal` (dB = 12 * intensity)."""
+    """[(absolute t, swell dB)] from scene `reveal="t_local[:dB]"` and cues of kind `reveal` (dB = 10 * intensity)."""
     ev = []
     for sc in scenes or []:
         raw = sc.get("reveal")
@@ -405,11 +429,11 @@ def reveal_events(scenes: list, cues: list) -> list:
             db = float(parts[1]) if len(parts) > 1 and parts[1].strip() else REVEAL_DB
         except ValueError:
             continue
-        ev.append((t, db))
+        ev.append((t, min(db, 10.0)))
     for c in cues or []:
         if str(c.get("kind")) == "reveal":
-            db = float(c["gain_db"]) if c.get("gain_db") is not None else 12.0 * float(c.get("intensity", 0.75))
-            ev.append((float(c.get("t", 0.0)), db))
+            db = float(c["gain_db"]) if c.get("gain_db") is not None else 10.0 * float(c.get("intensity", 0.75))
+            ev.append((float(c.get("t", 0.0)), min(db, 10.0)))
     return sorted(ev)
 
 
@@ -421,7 +445,7 @@ def _env(t: np.ndarray, t0: float, att: float, hold: float, rel: float) -> np.nd
 
 
 def mix_motion(scenes: list, cues: list, dur: float, hits: list) -> dict:
-    """Control-rate curves: bed dB (reveal swell + foley duck), music dB (slight duck during the swell), and the pieces."""
+    """Control-rate curves: bed dB (reveal swell + foley duck), music dB (gentle duck during the swell), and pieces."""
     n = int(dur * CTRL_RATE) + 2
     t = np.arange(n) / CTRL_RATE
     swell = np.zeros(n)
@@ -447,39 +471,69 @@ def apply_db(x: np.ndarray, t_ctrl: np.ndarray, db: np.ndarray) -> np.ndarray:
 # foley
 # --------------------------------------------------------------------------------------------------
 
-# action -> [(group, gain, pitch ratio)]  (all layers play together)
+# action -> [(group, gain, pitch ratio, max_dur_s, fade_out_s[, delay_s])]
 FOLEY = {
-    "paw_step": [("foley.paw_step", 0.38, 1.0)],
-    "foot_step": [("foley.paw_step", 0.38, 1.0)],
-    "critter_hop": [("foley.paw_step", 0.34, 1.15), ("foley.rustle", 0.18, 1.0)],
-    "ear_perk": [("foley.rustle", 0.30, 1.25)],
-    "water_ripple": [("foley.water_ripple", 0.42, 1.0)],
-    "wave_surge": [("foley.water_ripple", 0.55, 0.85)],
-    "drink_sip": [("foley.water_ripple", 0.40, 1.1)],
-    "spirit_shimmer": [("foley.spirit_shimmer", 0.38, 1.0)],
-    "wood_creak": [("foley.wood_creak", 0.55, 1.0)],
-    "layer_float": [("foley.spirit_shimmer", 0.20, 0.9)],
-    "stroke_draw": [("foley.spirit_shimmer", 0.34, 1.0)],
-    "yawn": [("foley.rustle", 0.20, 0.85)],
+    "paw_step":       [("foley.paw_step", 0.28, 1.00, 0.14, 0.05)],
+    "foot_step":      [("foley.paw_step", 0.28, 1.00, 0.14, 0.05)],
+    "critter_hop":    [("foley.paw_step", 0.30, 1.18, 0.14, 0.05)],
+    "water_ripple":   [("foley.water_ripple", 0.38, 1.00, 0.28, 0.08)],
+    "wave_surge":     [("foley.water_ripple", 0.44, 0.86, 0.34, 0.10)],
+    "drink_sip":      [("foley.water_ripple", 0.32, 1.12, 0.26, 0.08)],
+    "spirit_shimmer": [("foley.spirit_shimmer", 0.22, 1.00, 1.10, 0.38)],
+    "layer_float":    [("foley.spirit_shimmer", 0.15, 1.00, 0.95, 0.35)],
+    "stroke_draw":    [("foley.spirit_shimmer", 0.18, 1.00, 0.90, 0.32)],
+    "wood_creak":     [("foley.wood_latch", 0.24, 1.00, 0.14, 0.05, 0.0), ("foley.wood_creak", 0.28, 0.92, 0.40, 0.16, 0.045)],
+}
+
+# Pentatonic {D, E, G, A, B} studio-instrument grace notes for expressive character foley
+# (consonant across both the D-major/B-minor lake suite and the A-minor/C-major woodland suite)
+FOLEY_GRACE = {
+    "ear_perk":       [("harp", 69, 0.28, 0.42, 0.0), ("vibes", 81, 0.18, 0.38, 0.03)],
+    "critter_hop":    [("harp", 62, 0.26, 0.36, 0.0), ("harp", 69, 0.28, 0.42, 0.06)],
+    "water_ripple":   [("vibes", 74, 0.15, 0.55, 0.03)],
+    "spirit_shimmer": [("vibes", 81, 0.20, 0.85, 0.0), ("harp", 74, 0.20, 0.90, 0.07)],
+    "wood_creak":     [("harp", 57, 0.22, 0.65, 0.05)],
+    "yawn":           [("flute", 64, 0.24, 0.55, 0.0), ("harp", 57, 0.20, 0.65, 0.10)],
 }
 
 
 def foley(bank: Bank, action: str, intensity: float, pitch: float, rng: np.random.Generator) -> np.ndarray | None:
-    """Recorded foley for one cue as a mono-ish (n, 2) array, or None when the action has no recorded group."""
-    layers = FOLEY.get(action)
-    if not layers or not all(bank.has(g) for g, _, _ in layers):
+    """Recorded foley for one cue as a stereo (n, 2) array, or None when the action has no recorded group."""
+    layers = FOLEY.get(action, [])
+    graces = FOLEY_GRACE.get(action, [])
+    if not layers and not graces:
         return None
-    parts = []
-    for group, gain, ratio in layers:
+    if layers and not all(bank.has(spec[0]) for spec in layers):
+        return None
+
+    parts: list[tuple[float, np.ndarray]] = []
+    for spec in layers:
+        group, gain, ratio, max_dur, fo_s = spec[:5]
+        delay_s = spec[5] if len(spec) > 5 else 0.0
         row = bank.pick(group, rng)
+        if row is None:
+            continue
         x = bank.audio(row)
-        semis = 12.0 * np.log2(max(0.4, ratio * pitch)) + rng.uniform(-0.45, 0.45)
+        jitter = 0.10 if group == "foley.spirit_shimmer" else 0.30
+        semis = 12.0 * np.log2(max(0.4, ratio * pitch)) + rng.uniform(-jitter, jitter)
         x = shift(x, semis)
+        n_lim = min(len(x), int(round(max_dur * SR)))
+        x = x[:n_lim].copy()
         x = filt(x, row.get("lp"), row.get("hp"))
-        x = fade(x, 0.003, min(0.08, 0.3 * len(x) / SR))
-        parts.append(x * gain * float(row.get("gain", 1.0)) * 10 ** (rng.uniform(-1.5, 1.5) / 20.0))
-    n = max(len(p) for p in parts)
+        x = fade(x, 0.004, min(fo_s, 0.45 * len(x) / SR))
+        parts.append((delay_s, x * gain * float(row.get("gain", 1.0)) * (10 ** (rng.uniform(-0.8, 0.8) / 20.0))))
+
+    semi_off = int(round(12.0 * np.log2(max(0.5, min(1.6, pitch)))))
+    choice = int(rng.choice([0, 2, 5])) if action == "ear_perk" else (int(rng.choice([0, 2, 7])) if action == "water_ripple" else 0)
+    for inst, midi, vel, hold, delay_s in graces:
+        note = sample_note(bank, inst, midi + semi_off + choice, hold, vel, rng)
+        if note is not None:
+            parts.append((delay_s, note * 0.50))
+
+    if not parts:
+        return None
+    n = max(int(round(d * SR)) + len(p) for d, p in parts)
     out = np.zeros((n, 2))
-    for p in parts:
-        out[: len(p)] += p
-    return out * float(np.clip(intensity, 0.0, 1.2))
+    for d, p in parts:
+        add(out, d, p)
+    return out * float(np.clip(intensity, 0.0, 1.15))

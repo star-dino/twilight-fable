@@ -302,7 +302,7 @@ def cmd_credits(_args) -> int:
         "",
         "No audio is committed to the repository: `npm run init` downloads the files into `../out/samples-cache/twilight-fable/`.",
         "",
-        "## Freesound recordings (CC0 1.0)",
+        "## Ambient & foley recordings (CC0 1.0)",
         "",
         "| id | author | title | used for | source |",
         "| --- | --- | --- | --- | --- |",

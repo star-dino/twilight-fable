@@ -526,8 +526,11 @@ export function registerRuntimeCue(cue) {
   const label = String(cue.label || kind);
   const t = +cue.t.toFixed(3);
   const list = window.CUES.cues;
-  const minGap = LOCOMOTION_CUE_KINDS.has(kind) ? 0.65 : 0.42;
-  const dup = list.some((c) => c.kind === kind && (c.label || c.kind) === label && Math.abs(c.t - t) < minGap);
+  const isLoco = LOCOMOTION_CUE_KINDS.has(kind);
+  const minGap = isLoco ? 0.42 : 0.42;
+  const dup = list.some(
+    (c) => c.kind === kind && (isLoco || (c.label || c.kind) === label) && Math.abs(c.t - t) < minGap
+  );
   if (dup) return;
   const entry = {
     t,
